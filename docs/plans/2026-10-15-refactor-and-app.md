@@ -260,8 +260,12 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     matplotlib helpers scale y over the whole profile, not only the shown r range (cosmetic;
     recorded in open-items).
 
-- [ ] **Task 18: CI**
+- [x] **Task 18: CI**
   - Files: `.github/workflows/ci.yml`
   - Done when: after push, `gh run watch` shows success. The workflow runs ubuntu with
     Python 3.12, `pip install -e ".[dev]"`, ruff check and format check, and `pytest` (slow and
     legacy tests excluded or skipped).
+  - As built: also runs `scripts/check_docs.py`; tests run as `pytest -m "not slow and not
+    legacy"`. First run green: https://github.com/bpy13/outflow/actions/runs/38735996007
+    (79 passed, about 1 min). GitHub warns that `actions/checkout@v4` and
+    `actions/setup-python@v5` target the deprecated Node.js 20 (recorded in open-items).

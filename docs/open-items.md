@@ -51,6 +51,10 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
       although the curves shown stay above 1e-13). The app is not affected (it trims curves to
       the shown range). Fix: trim each curve to r ≤ x_max r_sb before plotting, as the app does.
 
+- [ ] (Phase 4, Task 18, non-blocking.) CI shows a warning that `actions/checkout@v4` and
+      `actions/setup-python@v5` target the deprecated Node.js 20 runtime (they still run).
+      Bump them to versions built for Node.js 24 when convenient.
+
 ## Later
 
 - Port Figs. 1–5 scripts and the §3.5 line-emission work (Figs. 10–11).
