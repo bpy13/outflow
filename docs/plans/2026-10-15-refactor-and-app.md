@@ -110,7 +110,7 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     - v_A and ρ switching at r_sb as the paper code does;
     - a `legacy` test matching CRline's `fgrav`, `cs2s` and `uAs` after unit conversion, to 1e-12.
 
-- [ ] **Task 7: Equations and integrator**
+- [x] **Task 7: Equations and integrator**
   - Files: `src/outflow/equations.py`, `src/outflow/integrator.py`, `tests/unit/test_integrator.py`,
     `tests/unit/test_equations.py`
   - Done when: tests pass for:
