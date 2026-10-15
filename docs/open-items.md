@@ -29,6 +29,11 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
          `docs/known-issues.md`; alternative: raise `NoSolutionError` in case 2 so the app
          says "no stationary wind solution" instead of showing an unconverged profile.
 
+- [ ] (Phase 3, non-blocking.) The app has not been looked at in a real browser: the checks were
+      AppTest (every tab, runs, errors, stall notice), a headless `streamlit run` answering on
+      `/_stcore/health` and `/`, and the app's Plotly figures for Figs. 6, 7 and 9 redrawn with
+      matplotlib. A quick look in a browser (layout, legend, hover text) is still worth doing.
+
 - [x] For Task 8/9 (comparison with the paper runs): the reference radii are non-decreasing,
       not strictly increasing. Every paper run repeats a radius 35–107 times (where the step
       fell below round-off near r_sb, while v, P, ρ still change slightly), and
