@@ -151,8 +151,12 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     covers it. API: `cc85_velocity_profile(radius, starburst_radius, terminal_velocity)` and
     `cc85_dimensionless_velocity(x)`.
 
-- [ ] **Task 10: Experimental cooling**
+- [x] **Task 10: Experimental cooling**
   - Files: `src/outflow/cooling.py`, extend `boundary.py`, `tests/integration/test_cooling.py`
+  - As built: the T₀ search lives in `cooling.py` (`cooling_central_state`) and reuses
+    `boundary.sonic_trial`, so `boundary.py` needed no change. Paper defaults: a cooling
+    solution exists (T₀ ≈ 1.13e7 K, about 11 s). The solver also falls back to no cooling if
+    the cooled wind breaks down. The fallback test is `slow` (about 27 s).
   - Done when: `solve_wind(WindParameters.paper_default(), cooling=True)` returns finite
     profiles with `cooling_used` reported, and the spline matches legacy `plotcool` values to
     1e-12 (`legacy` test).

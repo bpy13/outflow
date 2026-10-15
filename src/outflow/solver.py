@@ -47,16 +47,21 @@ def solve_wind(
     if not outer_radius > 0:
         raise ValueError("outer_radius must be greater than zero")
 
-    cooling_function = None
-    state = None
     if cooling:
+        # Imported here so that the cooling table is only loaded when cooling is asked for.
         from outflow import cooling as cooling_module
 
         state, cooling_function = cooling_module.cooling_central_state(params)
-    equations = WindEquations(params, cooling_function)
-    if state is None:
-        central_density = boundary.find_central_density(params, equations)
-        state = boundary.central_state(params, central_density)
+        if state is not None:
+            try:
+                return integrate_outward(
+                    WindEquations(params, cooling_function), state, outer_radius
+                )
+            except NoSolutionError:
+                pass  # the cooled wind breaks down; fall back to no cooling
+    equations = WindEquations(params)
+    central_density = boundary.find_central_density(params, equations)
+    state = boundary.central_state(params, central_density)
     return integrate_outward(equations, state, outer_radius)
 
 
