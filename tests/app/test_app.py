@@ -149,6 +149,15 @@ def test_fig7_run_plots_four_runs_and_four_published_overlays():
     assert "published" not in kinds
 
 
+def test_about_tab_has_paper_links_and_energy_note():
+    app = start_app()
+    about = app.tabs[5]
+    text = "\n".join(element.value for element in about.markdown)
+    assert "https://arxiv.org/abs/2001.04384" in text
+    assert "https://academic.oup.com/mnras/article/492/3/3179/5697960" in text
+    assert "4.2e41 erg/s" in text and "1e42 erg/s" in text
+
+
 def test_invalid_inputs_disable_run_with_a_plain_message():
     app = start_app()
     app.number_input(key="explore_cr_fraction").set_value(0.5)

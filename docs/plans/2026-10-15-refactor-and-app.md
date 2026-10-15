@@ -213,12 +213,13 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     the thermal / CR / radiation winds, recomputed lines inside the published bands
     everywhere. The Fig. 7 AppTest takes about 28 s.
 
-- [ ] **Task 14: About tab**
+- [x] **Task 14: About tab**
   - Files: extend `app/streamlit_app.py`
   - Done when: an AppTest finds the arXiv and MNRAS links and the Ė note in the About tab.
   - Notes: covers what the model is (paper §2.4, short), its assumptions (steady, spherical,
     inviscid, cooling off), the Ė note (published figures used 4.2e41 erg/s; Table 1 says 1e42),
     and the citation.
+  - As built: also a BibTeX block (no DOI, since it is not confirmed yet; see Task 15).
 
 ## Phase 4: Docs, examples, CI (A5, A6)
 

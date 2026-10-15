@@ -534,6 +534,86 @@ def figure_tab(spec: FigureSpec):
     show_figure_results(spec, results)
 
 
+# --- About tab ---------------------------------------------------------------------------------
+
+ARXIV_URL = "https://arxiv.org/abs/2001.04384"
+MNRAS_URL = "https://academic.oup.com/mnras/article/492/3/3179/5697960"
+
+ABOUT_MODEL = """
+### What the model does
+
+A starburst (a region of intense star formation, here the galaxy M82) injects gas and energy
+through supernovae and stellar winds. This app solves for the steady wind that this drives out
+of the galaxy, following section 2.4 of the paper.
+
+- Inside the starburst radius r_sb, mass and energy are added uniformly, as in the classic
+  Chevalier & Clegg (1985) wind.
+- The energy is split between three channels: **heating the gas** (thermal), **cosmic rays**
+  (energetic particles that push on the gas through the magnetic field; they stream at the
+  Alfvén speed set by B₀), and **radiation** (starlight that pushes on the gas in proportion to
+  its opacity κ).
+- The wind climbs out of the gravity of a **dark-matter halo** with an NFW density profile
+  (mass M_tot, scale radius R_s, virial radius R_vir).
+- The solver finds the central density for which the wind passes smoothly from slower than
+  sound to faster than sound at r_sb, then integrates outward. If gravity wins and the wind
+  falls back below the sound speed, the wind **stalls** and the profile ends there.
+
+### Assumptions
+
+- **Steady:** nothing changes with time.
+- **Spherical:** everything depends on radius only.
+- **Inviscid:** no viscosity or heat conduction.
+- **Cooling off:** the gas does not lose energy by radiating, as in the paper's runs.
+- Gas and cosmic rays are ideal fluids (adiabatic indices 5/3 and 4/3), with mean particle
+  mass μ = 1.4 m_H and the paper code's rounded constants.
+
+The numbers come from a port of the paper's own code (Cash–Karp Runge–Kutta, relative
+tolerance 1e-12); the published runs are reproduced to better than 1 part in 1000.
+"""
+
+ABOUT_ENERGY_NOTE = """
+### A note on the energy injection rate Ė
+
+The published Figs. 6–9 were made with **Ė = 4.2e41 erg/s**, the value in the paper's code,
+although the paper's Table 1 lists 1e42 erg/s. The app's defaults and figure tabs use 4.2e41
+erg/s so that they reproduce the published figures. You can tell from the results: the
+largest speed the energy could give the gas, v∞ = √(2Ė/Ṁ), is 714 km/s for 4.2e41 erg/s but
+1100 km/s for 1e42 erg/s, and the published thermal wind reaches about 650 km/s.
+"""
+
+ABOUT_CITATION = f"""
+### Paper and citation
+
+If you use this model, please cite:
+
+Yu B. P. B., Owen E. R., Wu K., Ferreras I., 2020, *A hydrodynamical study of outflows in
+starburst galaxies with different driving mechanisms*, MNRAS, 492, 3179.
+
+- arXiv: [arXiv:2001.04384]({ARXIV_URL})
+- MNRAS: [MNRAS 492(3), 3179 (2020)]({MNRAS_URL})
+"""
+
+BIBTEX = """@article{Yu2020,
+  author  = {Yu, B. P. Brian and Owen, Ellis R. and Wu, Kinwah and Ferreras, Ignacio},
+  title   = {A hydrodynamical study of outflows in starburst galaxies with different
+             driving mechanisms},
+  journal = {Monthly Notices of the Royal Astronomical Society},
+  year    = {2020},
+  volume  = {492},
+  number  = {3},
+  pages   = {3179},
+  eprint  = {2001.04384},
+  archivePrefix = {arXiv}
+}"""
+
+
+def about_tab():
+    st.markdown(ABOUT_MODEL)
+    st.markdown(ABOUT_ENERGY_NOTE)
+    st.markdown(ABOUT_CITATION)
+    st.code(BIBTEX, language="bibtex")
+
+
 # --- page --------------------------------------------------------------------------------------
 
 
@@ -548,7 +628,7 @@ def main():
         with tab:
             figure_tab(spec)
     with tabs[5]:
-        st.caption("Coming soon.")
+        about_tab()
 
 
 main()
