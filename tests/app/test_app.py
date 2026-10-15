@@ -121,6 +121,34 @@ def test_stalled_wind_shows_a_notice():
     assert any("stalls" in notice.value for notice in app.info)
 
 
+def test_figure_tabs_compute_nothing_until_run():
+    app = start_app()
+    for figure in (6, 7, 8, 9):
+        assert app.button(key=f"fig{figure}_run").label.startswith("Run the")
+    assert not app.get("plotly_chart")
+
+
+@pytest.mark.slow
+def test_fig7_run_plots_four_runs_and_four_published_overlays():
+    app = start_app()
+    app.button(key="fig7_run").click()
+    app.run(timeout=300)
+    assert not app.exception, app.exception
+    assert not app.error, [e.value for e in app.error]
+    traces = plotted_traces(app)
+    velocity = [t for t in traces if t["meta"]["panel"] == "v" and not t["meta"]["ratio"]]
+    kinds = [t["meta"]["kind"] for t in velocity]
+    assert kinds.count("computed") == 4
+    assert kinds.count("published") == 4
+    ratios = [t for t in traces if t["meta"]["panel"] == "v" and t["meta"]["ratio"]]
+    assert len(ratios) == 8
+    # The published overlay can be switched off.
+    app.toggle(key="fig7_show_published").set_value(False)
+    app.run()
+    kinds = [t["meta"]["kind"] for t in plotted_traces(app) if t["meta"]["panel"] == "v"]
+    assert "published" not in kinds
+
+
 def test_invalid_inputs_disable_run_with_a_plain_message():
     app = start_app()
     app.number_input(key="explore_cr_fraction").set_value(0.5)

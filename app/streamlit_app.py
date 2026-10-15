@@ -19,7 +19,15 @@ from pathlib import Path
 import plots
 import streamlit as st
 
-from outflow import NoSolutionError, WindParameters, WindProfile, solve_wind
+from outflow import (
+    NoSolutionError,
+    PaperRun,
+    WindParameters,
+    WindProfile,
+    load_paper_profile,
+    paper_runs,
+    solve_wind,
+)
 from outflow.solver import DEFAULT_OUTER_RADIUS_IN_SB
 
 TAB_NAMES = (
@@ -405,6 +413,127 @@ def explore_tab():
     show_explore_results()
 
 
+# --- figure tabs (Figs. 6-9) -------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FigureSpec:
+    """One of the paper's figures: what it varies and how it is drawn."""
+
+    number: int
+    description: str
+    x_max: float  # right edge of the r / r_sb axis, as in the published figure
+    with_ratios: bool  # Figs. 7-9 add ratio panels normalised to the first run
+
+
+FIGURES = (
+    FigureSpec(
+        6,
+        "Three winds that put 80 % of the injected energy into one channel: gas heating "
+        "(thermal), cosmic rays, or radiation. Computed to 100 r_sb, shown to 5 r_sb.",
+        5.0,
+        False,
+    ),
+    FigureSpec(
+        7,
+        "A cosmic-ray-driven wind with magnetic field B₀ = 0, 5, 50 and 100 µG. The field sets "
+        "how fast cosmic rays stream through the gas. Ratios are relative to B₀ = 0.",
+        5.0,
+        True,
+    ),
+    FigureSpec(
+        8,
+        "A radiation-driven wind with opacity κ = 0, 1e3, 1e4 and 1e5 cm²/g, i.e. how strongly "
+        "the gas absorbs the starburst's light. Ratios are relative to κ = 0.",
+        5.0,
+        True,
+    ),
+    FigureSpec(
+        9,
+        "A thermally driven wind in dark-matter haloes of 0, 1 and 10 times the M82 mass. "
+        "Computed to 50 r_sb, shown to 30 r_sb; the heaviest halo stops the wind. Ratios are "
+        "relative to the run without a halo.",
+        30.0,
+        True,
+    ),
+)
+
+
+@dataclass(frozen=True)
+class FigureRunResult:
+    """One recomputed paper run, with its published profile for the overlay."""
+
+    run: PaperRun
+    outcome: RunOutcome
+    published: WindProfile
+
+
+def run_figure(spec: FigureSpec):
+    """Recompute every run of one figure, showing "run k of n" while it works."""
+    runs = paper_runs(spec.number)
+    progress = st.progress(0.0, text=f"Run 1 of {len(runs)}: {runs[0].label}…")
+    results = []
+    for index, run in enumerate(runs):
+        progress.progress(index / len(runs), text=f"Run {index + 1} of {len(runs)}: {run.label}…")
+        outcome = solve_safely(lambda run=run: run.params, run.outer_radius_in_sb)
+        results.append(FigureRunResult(run, outcome, load_paper_profile(run)))
+    progress.empty()
+    st.session_state[f"fig{spec.number}_results"] = results
+
+
+def figure_series(results: list[FigureRunResult], show_published: bool) -> list[plots.Series]:
+    """Recomputed curves, then (optionally) the published ones; one colour per paper run."""
+    computed, published = [], []
+    for index, result in enumerate(results):
+        color = plots.series_color(index)
+        if result.outcome.profile is not None:
+            computed.append(plots.Series(result.run.label, result.outcome.profile, color))
+        published.append(plots.Series(result.run.label, result.published, color, published=True))
+    return computed + (published if show_published else [])
+
+
+def show_figure_results(spec: FigureSpec, results: list[FigureRunResult]):
+    for result in results:
+        outcome = result.outcome
+        if outcome.profile is None:
+            show_error(f"{result.run.label}: {outcome.error}", outcome.details)
+        elif outcome.profile.stalled:
+            st.info(stall_notice(result.run.label, outcome.profile))
+    show_published = st.toggle(
+        "Show the published curves", value=True, key=f"fig{spec.number}_show_published"
+    )
+    series = figure_series(results, show_published)
+    if not series:
+        return
+    if spec.with_ratios:
+        figure = plots.profile_and_ratio_figure(series, x_max=spec.x_max)
+    else:
+        figure = plots.profile_figure(series, x_max=spec.x_max)
+    st.plotly_chart(figure, key=f"fig{spec.number}_plot")
+    st.caption(
+        "Thin lines: recomputed now. Pale wide bands of the same colour: the published curves "
+        "(the paper code's saved runs). Grey shading: inside the starburst region (r < r_sb)."
+    )
+
+
+def figure_tab(spec: FigureSpec):
+    runs = paper_runs(spec.number)
+    st.markdown(spec.description)
+    pressed = st.button(
+        f"Run the {len(runs)} cases of Fig. {spec.number}",
+        type="primary",
+        key=f"fig{spec.number}_run",
+        help="Each case takes a few seconds; the whole figure about half a minute.",
+    )
+    if pressed:
+        run_figure(spec)
+    results = st.session_state.get(f"fig{spec.number}_results")
+    if results is None:
+        st.caption("Press the button to recompute the figure and compare it with the paper.")
+        return
+    show_figure_results(spec, results)
+
+
 # --- page --------------------------------------------------------------------------------------
 
 
@@ -415,9 +544,11 @@ def main():
     tabs = st.tabs(TAB_NAMES)
     with tabs[0]:
         explore_tab()
-    for tab in tabs[1:]:
+    for tab, spec in zip(tabs[1:5], FIGURES, strict=True):
         with tab:
-            st.caption("Coming soon.")
+            figure_tab(spec)
+    with tabs[5]:
+        st.caption("Coming soon.")
 
 
 main()

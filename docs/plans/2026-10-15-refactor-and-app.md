@@ -193,7 +193,7 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     (e.g. thermal + CR > 1) show a warning and disable Run. The headless launch was checked via
     `/_stcore/health` and the page (HTTP 200); the script itself is exercised by AppTest.
 
-- [ ] **Task 13: Figure tabs 6–9**
+- [x] **Task 13: Figure tabs 6–9**
   - Files: extend `app/streamlit_app.py` and `app/plots.py`; extend `tests/app/test_app.py`
     (`slow`)
   - Done when: an AppTest clicks Run in the Fig. 7 tab and finds 4 runs plotted plus 4
@@ -202,6 +202,16 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     curves are dashed, with a toggle. Figs. 7–9 add ratio panels (as in the paper) normalised to
     the first run. The x range is 0–5 r_sb (Figs. 6–8) or 0–30 r_sb (Fig. 9), with the
     computation outer radius as in the run map.
+  - As built: the published curves are drawn as pale, wide bands of the run's colour under the
+    recomputed lines (toggle "Show the published curves"), not dashed, because dashes and dots
+    already mark ρv² and P_C in the pressure panel. Figs. 7–9 put the four profile panels on the
+    left and their ratios on the right (as in the paper); published curves get their own ratios
+    to the first published run. Curves are trimmed to the shown r range, and the pressure axis
+    leaves out r < 0.1 r_sb (as `outflow.plotting` does), so ρv² → 0 at the centre does not
+    squash the panel. The by-eye check of Figs. 6, 7 and 9 used the app's own Plotly figures
+    redrawn with matplotlib (no browser or kaleido in the env): v∞ ≈ 650 / 590 / 290 km/s for
+    the thermal / CR / radiation winds, recomputed lines inside the published bands
+    everywhere. The Fig. 7 AppTest takes about 28 s.
 
 - [ ] **Task 14: About tab**
   - Files: extend `app/streamlit_app.py`

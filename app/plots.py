@@ -104,8 +104,9 @@ def profile_figure(series: list[Series], x_max: float | None = None, log_r: bool
         horizontal_spacing=0.09,
     )
     for item in series:
-        _add_profile_traces(figure, item, positions, log_r)
+        _add_profile_traces(figure, item, positions, x_max, log_r)
     _style_axes(figure, positions, x_max, log_r, ratio=False)
+    _fit_pressure_axis(figure, series, positions["P"], x_max)
     _add_pressure_key(figure, positions["P"])
     _finish(figure, series, height=640)
     return figure
@@ -129,11 +130,11 @@ def profile_and_ratio_figure(series: list[Series], x_max: float | None = None):
     )
     references = {kind: _first_of_kind(series, kind) for kind in (COMPUTED, PUBLISHED)}
     for item in series:
-        _add_profile_traces(figure, item, positions, log_r=False)
-        reference = references[item.kind]
-        _add_ratio_traces(figure, item, reference, ratio_positions)
+        _add_profile_traces(figure, item, positions, x_max, log_r=False)
+        _add_ratio_traces(figure, item, references[item.kind], ratio_positions, x_max)
     _style_axes(figure, positions, x_max, log_r=False, ratio=False)
     _style_axes(figure, ratio_positions, x_max, log_r=False, ratio=True)
+    _fit_pressure_axis(figure, series, positions["P"], x_max)
     _add_pressure_key(figure, positions["P"])
     _finish(figure, series, height=1100)
     return figure
@@ -175,9 +176,20 @@ def _trace(item: Series, quantity: Quantity, x, y, ratio: bool, show_legend: boo
     )
 
 
-def _add_profile_traces(figure, item: Series, positions: dict, log_r: bool):
+def _shown(x: np.ndarray, x_max: float | None, log_r: bool = False) -> np.ndarray:
+    """Mask of the points to draw: within the r axis (Plotly scales y to all data, even data
+    beyond the x range), and without r = 0 on a log r axis."""
+    keep = np.ones_like(x, dtype=bool)
+    if x_max is not None:
+        keep &= x <= x_max
+    if log_r:
+        keep &= x > 0
+    return keep
+
+
+def _add_profile_traces(figure, item: Series, positions: dict, x_max, log_r: bool):
     x = _x_values(item.profile)
-    keep = x > 0 if log_r else np.ones_like(x, dtype=bool)
+    keep = _shown(x, x_max, log_r)
     for quantity in QUANTITIES:
         y = np.asarray(quantity.values(item.profile), dtype=float)
         if PANELS[quantity.panel][1]:
@@ -225,13 +237,14 @@ class _InterpolatedProfile:
         return self.rho * self.v**2
 
 
-def _add_ratio_traces(figure, item: Series, reference: Series, positions: dict):
+def _add_ratio_traces(figure, item: Series, reference: Series, positions: dict, x_max):
     x = _x_values(item.profile)
     for quantity in QUANTITIES:
         ratio, within = _ratio(item.profile, reference.profile, quantity)
+        keep = _shown(x[within], x_max)
         row, col = positions[quantity.panel]
         figure.add_trace(
-            _trace(item, quantity, x[within], ratio, ratio=True, show_legend=False),
+            _trace(item, quantity, x[within][keep], ratio[keep], ratio=True, show_legend=False),
             row=row,
             col=col,
         )
@@ -242,6 +255,27 @@ def _first_of_kind(series: list[Series], kind: str) -> Series | None:
 
 
 # --- layout ---------------------------------------------------------------------------------
+
+
+def _fit_pressure_axis(figure, series: list[Series], position, x_max):
+    """Limit the log pressure axis to values outside the centre (ρv² -> 0 at r = 0 would
+    otherwise stretch the axis over twenty decades), as ``outflow.plotting`` does."""
+    logs = []
+    for item in series:
+        x = _x_values(item.profile)
+        outside = (x > 0.1) & _shown(x, x_max)
+        for quantity in QUANTITIES:
+            if quantity.panel != "P":
+                continue
+            values = np.asarray(quantity.values(item.profile), dtype=float)[outside]
+            values = values[values > 0]
+            if values.size:
+                logs.append(np.log10(values))
+    if logs:
+        joined = np.concatenate(logs)
+        row, col = position
+        # Plotly takes the range of a log axis in powers of ten.
+        figure.update_yaxes(range=[joined.min() - 0.3, joined.max() + 0.3], row=row, col=col)
 
 
 def _style_axes(figure, positions: dict, x_max, log_r: bool, ratio: bool):
