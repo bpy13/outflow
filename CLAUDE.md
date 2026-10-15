@@ -1,0 +1,42 @@
+# outflow – notes for Claude
+
+A public, refactored Python package and Streamlit app for the semi-analytic galactic-outflow
+model of Yu, Owen, Wu & Ferreras (2019, MNRAS), "A hydrodynamical study of outflows in starburst
+galaxies with different driving mechanisms". The model solves the steady, spherically symmetric
+wind equations with thermal, radiation and cosmic-ray driving plus an NFW halo (paper §2.4).
+Audience: astrophysicists reading the paper and programmers with no astrophysics background.
+The user is the paper's first author.
+
+Read these before substantial changes:
+
+- `docs/decisions.md` – what was decided and why (don't re-litigate without a reason)
+- `docs/open-items.md` – pending work and questions waiting on the user
+- `docs/plans/` – the latest plan
+- `docs/physics.md` – paper equation ↔ code map (once it exists)
+- `docs/architecture.md` – modules, data flow, where things live (once it exists)
+- `docs/known-issues.md` – limits and traps found so far (once it exists)
+- `README.md` – user-facing setup and commands
+
+## Environment
+- Conda env: `outflow` (Python 3.12)
+- Install: `conda activate outflow; pip install -e ".[dev]"`
+- Run the app: `streamlit run app/streamlit_app.py`
+- Tests: `pytest` (fast); `pytest -m slow` for the full paper-reproduction set
+- Lint: `ruff check . ; ruff format --check .`
+
+## Project rules
+- `legacy/` (paper-era scripts `Brian2019MNRAS/`, the handover attempt `outflow.py`, the paper
+  PDF) is git-ignored and is the physics reference. Never edit it; never commit it.
+- "Same as the paper" means the paper code `legacy/Brian2019MNRAS/version1/CRline.py` and its
+  output, now stored in `tests/reference/`, not `legacy/outflow.py` (which has a temperature
+  bug and auto-enables cooling).
+- Defaults follow the paper code exactly (values, rounded constants, tolerances, numerical
+  method). Changing any of them is a decision for the user.
+- Cooling is off by default and is not exposed in the UI.
+
+## Conventions
+- Internal units are cgs; docstrings give the paper equation number for every physics formula.
+- Variable names follow the paper's symbols spelled out (`v_inf`, `q_mass`, `sonic_radius`,
+  `nfw_scale_radius`); never reuse one name for two quantities.
+- Importing the package has no side effects (no file loads at import time beyond package data
+  on first use, no plots).

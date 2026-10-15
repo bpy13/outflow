@@ -1,0 +1,23 @@
+# Paper-era scripts, data and figures (kept locally for reference, not published)
+legacy/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Environments and local settings
+.env
+.venv/
+.claude/settings.local.json
+.streamlit/secrets.toml
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
