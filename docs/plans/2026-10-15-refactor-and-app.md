@@ -223,7 +223,7 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
 
 ## Phase 4: Docs, examples, CI (A5, A6)
 
-- [ ] **Task 15: README, licence, citation**
+- [x] **Task 15: README, licence, citation**
   - Files: `README.md`, `LICENSE` (MIT, "B. P. Brian Yu"), `CITATION.cff`
   - Done when: `cffconvert --validate` (or a YAML load plus the required keys) passes, and the
     README quickstart code runs as a test (`tests/integration/test_readme.py` extracts and runs
@@ -232,6 +232,10 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     API quickstart, the app, the paper links (arXiv:2001.04384; MNRAS URL without the guest
     key), the Ė note, and the fact that the paper-era code is not included. DOI: take it from
     the arXiv/MNRAS page; don't guess. If it can't be confirmed, use the URL only.
+  - As built: the arXiv page lists the DOI 10.1093/mnras/staa021; it is used in the README,
+    `CITATION.cff` and the app's About tab (citation line and BibTeX). `CITATION.cff` was
+    checked with `cffconvert --validate` (installed in the env for the check only, not a
+    project dependency). `pyproject.toml` has `readme = "README.md"` again.
 
 - [ ] **Task 16: Physics map and architecture docs**
   - Files: `docs/physics.md`, `docs/architecture.md`, `docs/known-issues.md`

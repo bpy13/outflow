@@ -590,7 +590,8 @@ Yu B. P. B., Owen E. R., Wu K., Ferreras I., 2020, *A hydrodynamical study of ou
 starburst galaxies with different driving mechanisms*, MNRAS, 492, 3179.
 
 - arXiv: [arXiv:2001.04384]({ARXIV_URL})
-- MNRAS: [MNRAS 492(3), 3179 (2020)]({MNRAS_URL})
+- MNRAS: [MNRAS 492(3), 3179 (2020)]({MNRAS_URL}), DOI
+  [10.1093/mnras/staa021](https://doi.org/10.1093/mnras/staa021)
 """
 
 BIBTEX = """@article{Yu2020,
@@ -602,6 +603,7 @@ BIBTEX = """@article{Yu2020,
   volume  = {492},
   number  = {3},
   pages   = {3179},
+  doi     = {10.1093/mnras/staa021},
   eprint  = {2001.04384},
   archivePrefix = {arXiv}
 }"""

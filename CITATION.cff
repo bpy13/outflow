@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite the paper it implements (see preferred-citation).
+title: "outflow: semi-analytic galactic outflow model of Yu et al. (2020)"
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/bpy13/outflow"
+authors:
+  - family-names: Yu
+    given-names: B. P. Brian
+preferred-citation:
+  type: article
+  title: >-
+    A hydrodynamical study of outflows in starburst galaxies with different driving
+    mechanisms
+  authors:
+    - family-names: Yu
+      given-names: B. P. Brian
+    - family-names: Owen
+      given-names: Ellis R.
+    - family-names: Wu
+      given-names: Kinwah
+    - family-names: Ferreras
+      given-names: Ignacio
+  journal: Monthly Notices of the Royal Astronomical Society
+  year: 2020
+  volume: 492
+  issue: 3
+  start: 3179
+  doi: 10.1093/mnras/staa021
+  url: "https://academic.oup.com/mnras/article/492/3/3179/5697960"
+  identifiers:
+    - type: doi
+      value: 10.1093/mnras/staa021
+    - type: url
+      value: "https://arxiv.org/abs/2001.04384"
+      description: arXiv:2001.04384
