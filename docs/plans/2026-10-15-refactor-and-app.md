@@ -54,7 +54,7 @@ Commands (env `outflow`): tests `pytest`, slow set `pytest -m slow`, lint
     markers `slow` and `legacy` (needs `legacy/`, skipped when absent), `addopts = "-m 'not slow'"`.
     ruff: line length 100. Package data: `src/outflow/data/**/*.csv`.
 
-- [ ] **Task 2: Move paper-era files into `legacy/`**
+- [x] **Task 2: Move paper-era files into `legacy/`**
   - Files: move `Brian2019MNRAS/`, `outflow.py`, `Cloudy.npy`, `Brian2019MNRAS.pdf`,
     `Brian2019MNRAS.tex`, `Brian2019MNRAS.bib` into `legacy/`
   - Done when: `Test-Path legacy\Brian2019MNRAS\version1\CRline.npy` is True and
