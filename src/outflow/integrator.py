@@ -12,6 +12,7 @@ States are tuples of floats; the derivative returns a tuple of the same length.
 """
 
 from collections.abc import Callable, Sequence
+from operator import mul
 
 Derivative = Callable[[float, tuple[float, ...]], Sequence[float]]
 
@@ -27,6 +28,7 @@ _B = (
 )
 _C5 = (37.0 / 378.0, 0.0, 250.0 / 621.0, 125.0 / 594.0, 0.0, 512.0 / 1771.0)
 _C4 = (2825.0 / 27648.0, 0.0, 18575.0 / 48384.0, 13525.0 / 55296.0, 277.0 / 14336.0, 1.0 / 4.0)
+_ERROR_WEIGHTS = tuple(c5 - c4 for c5, c4 in zip(_C5, _C4, strict=True))  # fifth - fourth order
 
 # Growth factor used when the error estimate is exactly zero (the formula would divide by
 # zero). The paper code never met this case in its runs.
@@ -49,20 +51,18 @@ def cash_karp_step(
     As in the paper code, the new state is the embedded fourth-order solution and the error is
     (fifth order - fourth order).
     """
-    n = len(y)
-    stages = [tuple(h * s for s in first_slope)]
+    # stages[i] holds the stage increments k1, k2, ... of component i. The weighted sums use
+    # sum(map(mul, weights, increments)), which runs its loop in C: the solver spends most of
+    # its time in this function. The products and their order are those of the plain form
+    # sum(c * k for c, k in zip(weights, increments)), so the results are bit-for-bit the same.
+    stages = [[h * s] for s in first_slope]
     for stage in range(1, 6):
-        coefficients = _B[stage]
-        state = tuple(
-            y[i] + sum(c * k[i] for c, k in zip(coefficients, stages, strict=False))
-            for i in range(n)
-        )
+        state = [yi + sum(map(mul, _B[stage], ki)) for yi, ki in zip(y, stages, strict=True)]
         slope = derivative(r + _A[stage] * h, state)
-        stages.append(tuple(h * s for s in slope))
-    new_y = tuple(y[i] + sum(c * k[i] for c, k in zip(_C4, stages, strict=True)) for i in range(n))
-    error = tuple(
-        sum((c5 - c4) * k[i] for c5, c4, k in zip(_C5, _C4, stages, strict=True)) for i in range(n)
-    )
+        for ki, s in zip(stages, slope, strict=True):
+            ki.append(h * s)
+    new_y = tuple(yi + sum(map(mul, _C4, ki)) for yi, ki in zip(y, stages, strict=True))
+    error = tuple(sum(map(mul, _ERROR_WEIGHTS, ki)) for ki in stages)
     return new_y, error
 
 
