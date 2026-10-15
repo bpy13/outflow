@@ -68,6 +68,16 @@ minor decisions made without asking; the user can overturn them.
 - The error measure must not depend on the order of array elements when a component is zero
   (e.g. P_C ≡ 0 when no CR injection): components with zero value are skipped explicitly.
   Results unchanged for the paper runs. (Claude's call)
+- **First-step fallback at r = 0** (Claude's call, 2026-10-15, Phase 2 Task 9). Near r = 0
+  the equations are unstable within one Runge–Kutta step (round-off grows ~40× per stage), so
+  the error estimate of the first step has a floor of about 1e-12–5e-12, close to the 1e-12
+  tolerance. For Fig. 7, B₀ = 100 µG, a few trial densities of the ρ₀ search hit that floor in
+  the cgs port (the paper code, with its own round-off, did not), the step size collapsed, and
+  the search ended 1.8e-9 away from the paper's ρ₀ and then could not start the outward
+  integration. Fix: only when the integration breaks down on its very first step, it is
+  repeated accepting that first step at 100 × the tolerance (1e-10). All other steps, and
+  every trial that succeeds with the paper code's rule, are unchanged. With it, all 14 ρ₀ agree
+  with the paper's to ≤ 1e-11 and all runs match to ≤ 2.2e-4.
 - Cooling: off by default. Kept in the API as an experimental option
   (`cooling=True`) using the S04-style T₀ search; not exposed in the UI; not validated against
   the paper (the paper's §3 runs never used it). The paper code's own cooling search

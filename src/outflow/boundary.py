@@ -36,6 +36,13 @@ FIRST_DENSITY_TRIAL = 0.1 * SOLAR_MASS / PARSEC**3  # first rho_0 trial, g/cm^3
 SMALLEST_STEP_FRACTION = 1e-50
 # Safety limit (not in the paper code): stop multiplying rho_0 by 10 after this many tries.
 MAX_DENSITY_INCREASES = 40
+# Fallback for the first step from r = 0 (not in the paper code). Near r = 0 the equations are
+# unstable within a step: round-off in the Runge-Kutta stages grows by a factor of ~40 per
+# stage, whatever the step size, so the error estimate of the first step has a floor of about
+# 1e-12 to 5e-12. Usually the floor is below STEP_TOLERANCE; for some strongly magnetised
+# CR-driven winds (Fig. 7, B_0 = 100 uG) it is not, and the step size collapses. Only then is
+# the integration restarted, accepting the first step at this looser tolerance.
+FIRST_STEP_FALLBACK_TOLERANCE = 100 * STEP_TOLERANCE
 
 # Marker for a trial whose step size collapsed before it became sonic or turned over (the
 # paper code returns the string 'RKfail'). It is treated as larger than any gradient, which is
@@ -104,7 +111,20 @@ def central_sound_speed_squared(state: CentralState) -> float:
 
 
 def sonic_trial(equations: WindEquations, state: CentralState) -> SonicTrial:
-    """Integrate from r = 0 until the flow turns sonic or turns over (paper code ``rsonic()``)."""
+    """Integrate from r = 0 until the flow turns sonic or turns over (paper code ``rsonic()``).
+
+    If the integration breaks down on its very first step (see
+    ``FIRST_STEP_FALLBACK_TOLERANCE``), it is repeated with the looser first-step tolerance.
+    """
+    trial = _sonic_trial(equations, state, STEP_TOLERANCE)
+    if trial.velocity_gradient == TRIAL_FAILED and trial.radius == 0:
+        trial = _sonic_trial(equations, state, FIRST_STEP_FALLBACK_TOLERANCE)
+    return trial
+
+
+def _sonic_trial(
+    equations: WindEquations, state: CentralState, first_step_tolerance: float
+) -> SonicTrial:
     starburst_radius = equations.starburst_radius
 
     def derivative(r, y):
@@ -120,7 +140,7 @@ def sonic_trial(equations: WindEquations, state: CentralState) -> SonicTrial:
         delta = relative_error(new_y, error)
         if h < starburst_radius * SMALLEST_STEP_FRACTION:
             return SonicTrial(r, TRIAL_FAILED)  # unstable iteration
-        if delta <= STEP_TOLERANCE:
+        if delta <= (first_step_tolerance if r == 0 else STEP_TOLERANCE):
             r, y = r + h, new_y
             cs2 = equations.sound_speed_squared(r, y[0], y[1], y[2], True)
             if r + h == r and y[0] ** 2 < 0.9 * cs2:

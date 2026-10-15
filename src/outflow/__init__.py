@@ -10,6 +10,7 @@ Main entry points::
 
 __version__ = "0.1.0"
 
+from outflow.cc85 import cc85_velocity_profile  # noqa: E402
 from outflow.errors import NoSolutionError  # noqa: E402
 from outflow.paper import PaperRun, load_paper_profile, paper_runs  # noqa: E402
 from outflow.parameters import WindParameters  # noqa: E402
@@ -22,6 +23,7 @@ __all__ = [
     "WindParameters",
     "WindProfile",
     "__version__",
+    "cc85_velocity_profile",
     "load_paper_profile",
     "paper_runs",
     "solve_wind",

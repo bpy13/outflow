@@ -106,6 +106,15 @@ def test_no_solution_error_is_plain_language():
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("name", [run.name for run in paper_runs()])
+def test_all_paper_runs(name):
+    profile, reference, differences = compare(name)
+    assert profile.stalled == (name == "fig9_halo_10x")
+    for column, value in differences.items():
+        assert value <= TOLERANCE, (column, value)
+
+
+@pytest.mark.slow
 def test_heavy_halo_stalls():
     profile, _, differences = compare("fig9_halo_10x")
     assert profile.stalled

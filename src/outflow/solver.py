@@ -60,10 +60,33 @@ def solve_wind(
     return integrate_outward(equations, state, outer_radius)
 
 
+class _FirstStepFailed(Exception):
+    """The step size collapsed on the first step from r = 0 (round-off floor)."""
+
+
 def integrate_outward(
     equations: WindEquations, state: boundary.CentralState, outer_radius: float
 ) -> WindProfile:
-    """Integrate from r = 0 with the given central state (the main loop of ``CRline()``)."""
+    """Integrate from r = 0 with the given central state (the main loop of ``CRline()``).
+
+    If the first step from r = 0 cannot meet the tolerance (see
+    ``boundary.FIRST_STEP_FALLBACK_TOLERANCE``), the integration is repeated with the looser
+    first-step tolerance.
+    """
+    try:
+        return _integrate_outward(equations, state, outer_radius, boundary.STEP_TOLERANCE)
+    except _FirstStepFailed:
+        return _integrate_outward(
+            equations, state, outer_radius, boundary.FIRST_STEP_FALLBACK_TOLERANCE
+        )
+
+
+def _integrate_outward(
+    equations: WindEquations,
+    state: boundary.CentralState,
+    outer_radius: float,
+    first_step_tolerance: float,
+) -> WindProfile:
     params = equations.params
     starburst_radius = params.starburst_radius
     stall_check_start = STALL_CHECK_START_IN_SB * starburst_radius
@@ -86,6 +109,8 @@ def integrate_outward(
                 break
         steps += 1
         if steps > MAX_STEPS or h < starburst_radius * boundary.SMALLEST_STEP_FRACTION:
+            if r == 0 and first_step_tolerance == boundary.STEP_TOLERANCE:
+                raise _FirstStepFailed
             if r <= stall_check_start:
                 raise NoSolutionError(
                     "No stationary wind solution was found for these inputs: the integration "
@@ -96,7 +121,7 @@ def integrate_outward(
             break
         new_y, error = cash_karp_step(derivative, h, r, y, slope)
         delta = relative_error(new_y, error)
-        if delta <= boundary.STEP_TOLERANCE:
+        if delta <= (first_step_tolerance if r == 0 else boundary.STEP_TOLERANCE):
             r, y = r + h, new_y
             rho = equations.density(r, y[0], False)
             radii.append(r)

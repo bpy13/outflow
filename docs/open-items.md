@@ -17,6 +17,18 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
 
 ## Pending work
 
+- [ ] (Question for the user, non-blocking; found in Phase 2, Task 8.) Two branches of the
+      paper code's ρ₀ search are ported as written but never happen in the 14 paper runs:
+      1. A trial whose step size collapses returns the string `'RKfail'`, which the search then
+         compares with numbers. Python 3 would crash there; the port treats it as larger than
+         any number (what Python 2 did), i.e. "the wind turned supersonic".
+      2. If even the critical ("peak") ρ₀ gives a sonic radius inside r_sb (strong radiation
+         or weak thermal driving, the paper's r_s < r_sb case), the paper code keeps the last
+         ρ₀ of its ×10 loop (0.1, 1, 10 … M☉/pc³), which is not a converged solution, and goes
+         on. The port does the same. Default if you say "ok": keep both as is and list them in
+         `docs/known-issues.md`; alternative: raise `NoSolutionError` in case 2 so the app
+         says "no stationary wind solution" instead of showing an unconverged profile.
+
 - [x] For Task 8/9 (comparison with the paper runs): the reference radii are non-decreasing,
       not strictly increasing. Every paper run repeats a radius 35–107 times (where the step
       fell below round-off near r_sb, while v, P, ρ still change slightly), and

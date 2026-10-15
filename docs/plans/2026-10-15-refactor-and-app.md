@@ -139,12 +139,17 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     the app's ratio panels use. `paper_runs()` returns `PaperRun` records (name, figure, label,
     params, outer radius).
 
-- [ ] **Task 9: All 14 paper runs and the analytic CC85**
+- [x] **Task 9: All 14 paper runs and the analytic CC85**
   - Files: extend `tests/regression/test_paper_runs.py` (parametrised, `slow`),
     `src/outflow/cc85.py`, `tests/regression/test_cc85.py`
   - Done when: `pytest -m slow` passes for all 14 at ≤ 1e-3 (comparison as in decisions.md).
     The CC85 test (split 1,0,0; κ, B₀, M = 0) matches eq. 8 to ≤ 1e-4. Record the measured max
     differences in the phase report.
+  - As built: measured max relative differences 1.2e-5–3.1e-5 (v), up to 2.1e-4 (P) over the
+    14 runs; CC85 3.1e-6. Runs take 2.5–7.6 s each. Needed the first-step fallback at r = 0
+    (decisions.md, "First-step fallback") for Fig. 7, B₀ = 100 µG; `tests/unit/test_boundary.py`
+    covers it. API: `cc85_velocity_profile(radius, starburst_radius, terminal_velocity)` and
+    `cc85_dimensionless_velocity(x)`.
 
 - [ ] **Task 10: Experimental cooling**
   - Files: `src/outflow/cooling.py`, extend `boundary.py`, `tests/integration/test_cooling.py`
