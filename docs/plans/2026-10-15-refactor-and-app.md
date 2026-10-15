@@ -164,7 +164,7 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     sonic radius, then brentq). If no cooling solution exists, fall back to no cooling and set
     `cooling_used=False`. The table loads lazily on first use.
 
-- [ ] **Task 11: Matplotlib helpers**
+- [x] **Task 11: Matplotlib helpers**
   - Files: `src/outflow/plotting.py`, `tests/unit/test_plotting.py`
   - Done when: `plot_profiles([...])` (four panels) and `plot_comparison(reference, others)`
     (ratio panels) save PNGs in a temporary folder without error (Agg backend).
