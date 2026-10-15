@@ -89,7 +89,7 @@ equation. The cross-checks against legacy (marked `legacy`) import the legacy fu
 executing `version1/CRline.py`'s function block only: the code between its first `'''` and
 `# setting up parameter space`. Never run its run loop, which takes minutes.
 
-- [ ] **Task 5: Constants and parameters**
+- [x] **Task 5: Constants and parameters**
   - Files: `src/outflow/constants.py`, `src/outflow/parameters.py`, `tests/unit/test_parameters.py`
   - Done when: tests pass for paper defaults, the derived q, Q_th, Q_CR, v∞ (714 km/s ± 1),
     `replace()`, the `from_astro_units()` round trip, and rejection of negative values or
