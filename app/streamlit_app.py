@@ -31,6 +31,7 @@ from outflow import (
     paper_runs,
     solve_wind,
 )
+from outflow.boundary import compiled_trials_available
 from outflow.solver import DEFAULT_OUTER_RADIUS_IN_SB
 
 TAB_NAMES = (
@@ -480,14 +481,22 @@ class FigureRunResult:
 
 
 def run_figure(spec: FigureSpec):
-    """Recompute every run of one figure, in parallel, showing "k of n finished"."""
+    """Recompute every run of one figure, showing "k of n finished".
+
+    With the compiled search (Numba installed) a run takes a fraction of a second, less than
+    starting a worker process, so the runs are solved here one after another. Without it they
+    are solved in parallel processes.
+    """
     runs = paper_runs(spec.number)
-    progress = st.progress(0.0, text=f"Solving the {len(runs)} runs at the same time…")
+    progress = st.progress(0.0, text=f"Solving the {len(runs)} runs…")
 
     def show_progress(finished: int):
         progress.progress(finished / len(runs), text=f"{finished} of {len(runs)} runs finished…")
 
-    outcomes = solve_runs_in_parallel(runs, show_progress)
+    if compiled_trials_available():
+        outcomes = solve_runs_one_by_one(runs, show_progress)
+    else:
+        outcomes = solve_runs_in_parallel(runs, show_progress)
     progress.empty()
     st.session_state[f"fig{spec.number}_results"] = [
         FigureRunResult(run, outcome, load_paper_profile(run))
@@ -512,11 +521,16 @@ def solve_runs_in_parallel(runs: list[PaperRun], on_finished) -> list[RunOutcome
                 on_finished(finished)
             return [outcome_of(future.result) for future in futures]
     except (BrokenProcessPool, OSError, NotImplementedError):
-        outcomes = []
-        for finished, run in enumerate(runs, start=1):
-            outcomes.append(solve_safely(lambda run=run: run.params, run.outer_radius_in_sb))
-            on_finished(finished)
-        return outcomes
+        return solve_runs_one_by_one(runs, on_finished)
+
+
+def solve_runs_one_by_one(runs: list[PaperRun], on_finished) -> list[RunOutcome]:
+    """Solve the runs in this process, one after another."""
+    outcomes = []
+    for finished, run in enumerate(runs, start=1):
+        outcomes.append(solve_safely(lambda run=run: run.params, run.outer_radius_in_sb))
+        on_finished(finished)
+    return outcomes
 
 
 def figure_series(results: list[FigureRunResult], show_published: bool) -> list[plots.Series]:
@@ -564,7 +578,8 @@ def figure_tab(spec: FigureSpec):
         f"Run the {len(runs)} cases of Fig. {spec.number}",
         type="primary",
         key=f"fig{spec.number}_run",
-        help="The cases are solved at the same time; a few seconds on a multi-core computer.",
+        help="About a second with Numba installed; otherwise the cases are solved in parallel "
+        "and take a few seconds on a multi-core computer.",
     )
     if pressed:
         run_figure(spec)

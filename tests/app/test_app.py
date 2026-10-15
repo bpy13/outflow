@@ -149,6 +149,32 @@ def test_fig7_run_plots_four_runs_and_four_published_overlays():
     assert "published" not in kinds
 
 
+@pytest.mark.slow
+def test_figure_runs_in_worker_processes_without_the_compiled_search(monkeypatch):
+    import concurrent.futures
+
+    import outflow
+
+    pools = []
+    real_pool = concurrent.futures.ProcessPoolExecutor
+
+    def counting_pool(*args, **kwargs):
+        pools.append(kwargs.get("max_workers"))
+        return real_pool(*args, **kwargs)
+
+    monkeypatch.setattr(concurrent.futures, "ProcessPoolExecutor", counting_pool)
+    monkeypatch.setattr(outflow.boundary, "compiled_trials_available", lambda: False)
+    app = start_app()
+    app.button(key="fig7_run").click()
+    app.run(timeout=300)
+    assert not app.exception, app.exception
+    assert not app.error, [e.value for e in app.error]
+    assert pools == [4]
+    traces = plotted_traces(app)
+    velocity = [t for t in traces if t["meta"]["panel"] == "v" and not t["meta"]["ratio"]]
+    assert [t["meta"]["kind"] for t in velocity].count("computed") == 4
+
+
 def test_figure_runs_one_by_one_when_processes_are_unavailable(monkeypatch):
     """Some hosts forbid worker processes; the figure tab then solves the runs in turn."""
     import concurrent.futures
@@ -164,9 +190,11 @@ def test_figure_runs_one_by_one_when_processes_are_unavailable(monkeypatch):
     def published_profile(params, outer_radius=None, cooling=False):
         return published[params]  # stands in for the solver: instant and deterministic
 
-    # The app imports both names afresh on every run, so patch them where they come from.
+    # The app imports these names afresh on every run, so patch them where they come from.
     monkeypatch.setattr(concurrent.futures, "ProcessPoolExecutor", no_processes)
     monkeypatch.setattr(outflow, "solve_wind", published_profile)
+    # Without the compiled search the app would use worker processes.
+    monkeypatch.setattr(outflow.boundary, "compiled_trials_available", lambda: False)
     app = start_app()
     app.button(key="fig7_run").click()
     app.run()
