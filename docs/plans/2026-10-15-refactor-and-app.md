@@ -171,7 +171,7 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
 
 ## Phase 3: Streamlit app (A4)
 
-- [ ] **Task 12: App shell and Explore tab**
+- [x] **Task 12: App shell and Explore tab**
   - Files: `app/streamlit_app.py`, `app/plots.py` (Plotly figure builders), `tests/app/test_app.py`
   - Done when: a `streamlit.testing.v1.AppTest` test:
     - loads the app with no exception and shows 6 tabs;
@@ -186,6 +186,12 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     Panels: v [km/s], log n [cm⁻³], log T [K], log P / P_C / ρv² [erg cm⁻³] against r/r_sb
     (log-r toggle). Stall shows `st.info`; `NoSolutionError` shows `st.error` with the
     message and an expander holding the details.
+  - As built: pressure and density panels use log axes (values in cm⁻³ / erg cm⁻³) rather than
+    plotting log₁₀ values. Explore keeps at most 8 runs (one per palette colour; the oldest is
+    dropped), labels each run with the inputs that differ from the paper defaults, offers one
+    CSV download per run (the package's CSV format) and a "Reset inputs" button. Invalid inputs
+    (e.g. thermal + CR > 1) show a warning and disable Run. The headless launch was checked via
+    `/_stcore/health` and the page (HTTP 200); the script itself is exercised by AppTest.
 
 - [ ] **Task 13: Figure tabs 6–9**
   - Files: extend `app/streamlit_app.py` and `app/plots.py`; extend `tests/app/test_app.py`
