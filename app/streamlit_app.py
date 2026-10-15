@@ -506,7 +506,10 @@ def show_figure_results(spec: FigureSpec, results: list[FigureRunResult]):
     if not series:
         return
     if spec.with_ratios:
-        figure = plots.profile_and_ratio_figure(series, x_max=spec.x_max)
+        # Ratios are always relative to the figure's first paper run (e.g. B0 = 0 in Fig. 7).
+        figure = plots.profile_and_ratio_figure(
+            series, x_max=spec.x_max, baseline_label=results[0].run.label
+        )
     else:
         figure = plots.profile_figure(series, x_max=spec.x_max)
     st.plotly_chart(figure, key=f"fig{spec.number}_plot")

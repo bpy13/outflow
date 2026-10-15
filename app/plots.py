@@ -112,12 +112,19 @@ def profile_figure(series: list[Series], x_max: float | None = None, log_r: bool
     return figure
 
 
-def profile_and_ratio_figure(series: list[Series], x_max: float | None = None):
-    """Profiles on the left and ratios to the first run on the right (4 rows x 2 columns).
+def profile_and_ratio_figure(
+    series: list[Series], x_max: float | None = None, baseline_label: str | None = None
+):
+    """Profiles on the left and ratios to a baseline run on the right (4 rows x 2 columns).
 
-    Recomputed curves are divided by the first recomputed curve; published curves by the first
-    published curve. The reference is interpolated linearly in r onto each profile's radii.
+    Recomputed curves are divided by the recomputed baseline; published curves by the published
+    baseline. The baseline is the run labelled ``baseline_label`` (default: the first series).
+    If the baseline of a kind is missing (e.g. its run failed), that kind gets no ratio curves
+    rather than silently being compared with another run. The reference is interpolated
+    linearly in r onto each profile's radii.
     """
+    if baseline_label is None and series:
+        baseline_label = series[0].label
     positions = {"v": (1, 1), "n": (2, 1), "T": (3, 1), "P": (4, 1)}
     ratio_positions = {key: (row, 2) for key, (row, _) in positions.items()}
     figure = make_subplots(
@@ -128,10 +135,11 @@ def profile_and_ratio_figure(series: list[Series], x_max: float | None = None):
         horizontal_spacing=0.09,
         column_titles=["Profiles", "Ratio to the first run"],
     )
-    references = {kind: _first_of_kind(series, kind) for kind in (COMPUTED, PUBLISHED)}
+    references = {kind: _baseline(series, kind, baseline_label) for kind in (COMPUTED, PUBLISHED)}
     for item in series:
         _add_profile_traces(figure, item, positions, x_max, log_r=False)
-        _add_ratio_traces(figure, item, references[item.kind], ratio_positions, x_max)
+        if references[item.kind] is not None:
+            _add_ratio_traces(figure, item, references[item.kind], ratio_positions, x_max)
     _style_axes(figure, positions, x_max, log_r=False, ratio=False)
     _style_axes(figure, ratio_positions, x_max, log_r=False, ratio=True)
     _fit_pressure_axis(figure, series, positions["P"], x_max)
@@ -250,8 +258,8 @@ def _add_ratio_traces(figure, item: Series, reference: Series, positions: dict, 
         )
 
 
-def _first_of_kind(series: list[Series], kind: str) -> Series | None:
-    return next((item for item in series if item.kind == kind), None)
+def _baseline(series: list[Series], kind: str, label: str | None) -> Series | None:
+    return next((item for item in series if item.kind == kind and item.label == label), None)
 
 
 # --- layout ---------------------------------------------------------------------------------
