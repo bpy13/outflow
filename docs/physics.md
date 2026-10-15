@@ -73,6 +73,8 @@ switch at r_sb (density for r < r_sb, Alfvén speed for r ≤ r_sb). The port fo
 | `central_state`, `CentralState` | eqs. 44–45 | P₀ and P_C,0 from ρ₀ |
 | `central_sound_speed_squared` | eq. 35 at r = 0 | with the L'Hôpital ratio v_A/v |
 | `sonic_trial`, `_sonic_trial`, `SonicTrial` | §2.3.2, §2.4 (code: `rsonic()`) | integrate from r = 0 until sonic or turning over |
+| `_sonic_trial_python` | §2.3.2 (code: `rsonic()`) | the trial in plain Python, the readable reference |
+| `_compiled_kernel`, `compiled_trials_available` | §2.3.2 (compiled copy of `rsonic()`) | the Numba copy in `_compiled.py`, used when installed; bit-identical |
 | `_bisect` | §2.3.2 (code: `gss()`) | bisection on ρ₀ |
 | `_brent`, `sonic_radius_mismatch` | §2.3.2 (not in the paper code; replaces the last `gss()` stage) | Brent's method on r_s(ρ₀) − r_sb (default) |
 | `find_central_density` | §2.3.2, §2.4 (code: `CRline()`) | ρ₀ for which the sonic radius is r_sb |
@@ -83,6 +85,11 @@ code bisects in that last stage; by default the port uses Brent's method (scipy'
 there, to the same precision with fewer trials (`method="bisection"` gives the paper code's
 search). Trials use the inner density and Alfvén forms at every radius (the code's `'find0'`
 tag).
+
+If Numba is installed (`pip install -e ".[fast]"`), each trial runs in `_compiled.py`, a
+compiled line-by-line copy of `physics.py`, `equations.py`, `integrator.py` and
+`_sonic_trial_python` (without cooling). It gives bit-for-bit the same floats; read the Python
+modules for the physics. `boundary.USE_COMPILED_TRIALS = False` switches it off.
 
 ## Solver (`solver.py`, `integrator.py`)
 

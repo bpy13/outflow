@@ -77,10 +77,19 @@ Brent's method and the paper code's bisection, which agree on ρ₀ to 2e-12, gi
 differ by up to 2e-4, and why the match to the published runs cannot be much better than
 that. Differences of this size are far below what is visible in a plot.
 
-## Figure tabs on machines with few cores
+## The compiled search is a second copy of the physics
 
-The figure tabs solve their runs in parallel, one process per CPU core. On a machine or host
-with one or two cores (e.g. free cloud hosting) the gain is correspondingly smaller. Where
+`_compiled.py` repeats the arithmetic of `physics.py`, `equations.py`, `integrator.py` and the
+trial integration. A change to any of those must be made in both places;
+`tests/unit/test_compiled.py` fails if the two stop giving identical results for the tested
+inputs. A change that never alters a result on those inputs (for example `v*v` instead of
+`v**2` in one place) can go unnoticed, so edit both copies the same way. The first run after
+installing compiles the code (about 5 s); later runs load it from Numba's on-disk cache.
+
+## Figure tabs without Numba on machines with few cores
+
+Without Numba the figure tabs solve their runs in parallel, one process per CPU core; on a
+machine or host with one or two cores (e.g. free cloud hosting) the gain is smaller. Where
 worker processes cannot be started at all, the runs are solved one after another.
 
 ## Repeated radii in the published data

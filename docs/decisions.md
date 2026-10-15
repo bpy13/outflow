@@ -120,7 +120,28 @@ overhead. Built on branch `feature/faster-solver`:
    1.7e-4 (was 2.1e-4). 70 s → 43.5 s. The paper code's search remains available as
    `find_central_density(..., method="bisection")`.
 
-Overall: 95 s → 43.5 s for the 14 runs (2.2×); a default Explore run about 1.5 s.
+Overall: 95 s → 43.5 s for the 14 runs (2.2×); a default Explore run about 1.4 s.
+
+4. **Numba-compiled trial integration** (user, 2026-10-15: "try numba now"; branch
+   `experiment/numba`). `src/outflow/_compiled.py` is a line-by-line compiled copy of the trial
+   integration of the ρ₀ search (physics, equations without cooling, Cash–Karp step,
+   `_sonic_trial`). The Python modules stay the readable reference. Decisions (Claude's calls):
+   - **Bit-identical, not just close.** Python's `x**2` calls the C library's `pow`, which
+     differs from the exactly rounded `x*x` in ~0.06 % of cases (`x**3`: ~26 %), and a
+     compiler replaces constant powers by multiplications. So every exponent is read from the
+     parameter array at run time (the compiler cannot fold it), and sums repeat Python 3.12's
+     compensated `sum()`. Result: all 14 runs bit-for-bit identical; tests compare compiled and
+     Python trials on 45 inputs × 2 first-step tolerances, and all 14 full runs (slow).
+   - **Optional:** extra `fast` (`pip install -e ".[fast]"`), in `environment.yml` and in CI;
+     without Numba the Python code runs. Loaded on first use, not at import.
+   - **Only the trials are compiled** (96 % of the time). The outward integration stays in
+     Python (~0.1 s per run); cooled winds use the Python code.
+   - **App:** with the compiled search, figure tabs solve their runs one after another in the
+     app's process (worker start-up would take longer than the runs); the parallel pool is
+     kept for installs without Numba.
+   Measured: 14 runs 43 s → 1.4 s; default solve 1.37 s → 0.10 s; Fig. 7 tab 1.5 s (3.6 s on
+   the first press after the app starts, which loads Numba). Compiling takes ~5 s once after
+   installing; the compiled code is cached on disk (~0.2 s to load).
 
 ## Verification
 

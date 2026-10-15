@@ -37,10 +37,12 @@ Python 3.12. With conda:
 ```powershell
 conda create -n outflow python=3.12
 conda activate outflow
-pip install -e ".[dev]"
+pip install -e ".[dev,fast]"
 ```
 
-Any other Python 3.12 environment works the same way with `pip install -e ".[dev]"`.
+Any other Python 3.12 environment works the same way. The `fast` extra installs Numba, which
+compiles the slowest part of the solver: same results to the last digit, about 30 times faster
+(a run takes about 0.1 s instead of 1.4 s). Without it, everything works in plain Python.
 
 ## Quickstart
 
@@ -57,7 +59,7 @@ profile.to_csv("wind.csv")  # r, v, rho, P, Pc, T, vA with a header of the input
 cr_driven = WindParameters.from_astro_units(thermal_fraction=0.1, cr_fraction=0.8)
 ```
 
-The run takes a few seconds. Main entry points:
+The run takes about a second (0.1 s with the `fast` extra). Main entry points:
 
 - `WindParameters` – the inputs (cgs), with `paper_default()`, `from_astro_units()` and `replace()`.
 - `solve_wind(params, outer_radius=None)` – returns a `WindProfile`: arrays `r, v, rho, P, Pc,
@@ -78,8 +80,8 @@ streamlit run app/streamlit_app.py
 
 Tabs: **Explore** (change any input, overlay runs, download CSV), **Fig. 6–9** (recompute the
 paper's run sets and compare them with the published curves) and **About**. Every run is
-computed when you press its button. A figure tab solves its runs at the same time, one per CPU
-core, so it takes about as long as its slowest run (about 5 s on a multi-core computer).
+computed when you press its button. With the `fast` extra a figure tab takes about a second;
+without it, the tab solves its runs in parallel and takes about 5 s on a multi-core computer.
 
 ## How the results compare with the paper
 

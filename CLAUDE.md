@@ -19,7 +19,7 @@ Read these before substantial changes:
 
 ## Environment
 - Conda env: `outflow` (Python 3.12)
-- Install: `conda activate outflow; pip install -e ".[dev]"`
+- Install: `conda activate outflow; pip install -e ".[dev,fast]"` (`fast` = Numba, optional)
 - Run the app: `streamlit run app/streamlit_app.py`
 - Tests: `pytest` (fast); `pytest -m slow` for the full paper-reproduction set
 - Lint: `ruff check . ; ruff format --check .`
@@ -41,6 +41,10 @@ Read these before substantial changes:
 - A speed-up that changes results is a numerics change (the user's decision). To show a
   speed-up changes nothing, use `tests/unit/test_integrator.py` (bit-identical RK step) and
   compare all 14 paper runs before and after.
+- `src/outflow/_compiled.py` is a Numba copy of the trial integration. Any change to
+  `physics.py`, `equations.py`, `integrator.py` or `boundary._sonic_trial_python` must be made
+  there too, keeping every exponent opaque (`x ** p[TWO]`, never `x**2`) and sums compensated;
+  `pytest tests/unit/test_compiled.py` (and `-m slow`) must stay bit-identical.
 - The app script keeps its `if __name__ == "__main__": main()` guard: the figure tabs' worker
   processes re-import it.
 - Cooling is off by default and is not exposed in the UI.
