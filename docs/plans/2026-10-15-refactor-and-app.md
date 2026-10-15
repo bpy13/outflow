@@ -119,7 +119,7 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     - a `legacy` test matching CRline `CC85()` derivatives at 5 sample states (subsonic,
       supersonic, r = 0 with du, B₀ = 0, κ = 0) to 1e-10.
 
-- [ ] **Task 8: Boundary conditions, solver and profile**
+- [x] **Task 8: Boundary conditions, solver and profile**
   - Files: `src/outflow/boundary.py`, `src/outflow/solver.py`, `src/outflow/profile.py`,
     `src/outflow/paper.py` (`paper_runs`, `load_paper_profile`), `tests/regression/test_paper_runs.py`
   - Done when:
@@ -132,6 +132,12 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     outer radius 50 r_sb. `WindProfile` fields `r, v, rho, P, Pc, T, vA` + `params`, `stalled`,
     `cooling_used`; properties `n`, `ram_pressure`, `sound_speed`. Error type
     `NoSolutionError(message)` with a plain-language message.
+  - As built: `NoSolutionError` lives in `src/outflow/errors.py` (with an optional `details`
+    string). `WindProfile` also has `outer_radius`, `metadata` (header entries such as the
+    source), `stall_radius`, `interpolate(radii)` (keeps the last point of repeated radii) and
+    `max_relative_differences(reference)` (the comparison of decisions.md), which the tests and
+    the app's ratio panels use. `paper_runs()` returns `PaperRun` records (name, figure, label,
+    params, outer radius).
 
 - [ ] **Task 9: All 14 paper runs and the analytic CC85**
   - Files: extend `tests/regression/test_paper_runs.py` (parametrised, `slow`),

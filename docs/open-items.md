@@ -17,12 +17,13 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
 
 ## Pending work
 
-- [ ] For Task 8/9 (comparison with the paper runs): the reference radii are non-decreasing,
+- [x] For Task 8/9 (comparison with the paper runs): the reference radii are non-decreasing,
       not strictly increasing. Every paper run repeats a radius 35–107 times (where the step
       fell below round-off near r_sb, while v, P, ρ still change slightly), and
       `fig9_halo_10x` ends with many points at the same radius, 44.8 r_sb, where it stalls.
       Interpolation onto new radii must handle the repeats (e.g. keep the last point per radius).
-      Found in Phase 1, Task 4.
+      Found in Phase 1, Task 4. Done in Task 8: `WindProfile.interpolate` keeps the last point
+      per radius.
 
 ## Later
 
