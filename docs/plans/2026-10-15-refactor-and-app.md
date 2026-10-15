@@ -237,13 +237,19 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     checked with `cffconvert --validate` (installed in the env for the check only, not a
     project dependency). `pyproject.toml` has `readme = "README.md"` again.
 
-- [ ] **Task 16: Physics map and architecture docs**
+- [x] **Task 16: Physics map and architecture docs**
   - Files: `docs/physics.md`, `docs/architecture.md`, `docs/known-issues.md`
   - Done when: every function in `physics.py`, `equations.py` and `boundary.py` appears in
     `physics.md` with its paper equation number, and the architecture doc covers every module
     in `src/outflow/` and `app/`. Check with a short script that greps the function names.
   - Notes: equation numbers come from `legacy/Brian2019MNRAS.tex`. Known issues include: the
     inner/outer switch convention, the Table 1 vs code Ė, and that cooling is unvalidated.
+  - As built: the check is `scripts/check_docs.py` (parses the three modules with `ast`; each
+    function or class must appear in `physics.md` on a line citing an equation or section;
+    each module of `src/outflow/` and `app/` must appear in `architecture.md`). Equation
+    numbers were counted from the LaTeX source and agree with the code's docstrings.
+    `known-issues.md` also covers the first-step fallback, the two untested ρ₀-search
+    branches (current behaviour), stalled winds, safety limits and repeated radii.
 
 - [ ] **Task 17: Examples**
   - Files: `examples/quickstart.py`, `examples/reproduce_fig6.py`

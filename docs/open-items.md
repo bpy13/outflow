@@ -28,6 +28,8 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
          on. The port does the same. Default if you say "ok": keep both as is and list them in
          `docs/known-issues.md`; alternative: raise `NoSolutionError` in case 2 so the app
          says "no stationary wind solution" instead of showing an unconverged profile.
+      The current behaviour is described in `docs/known-issues.md` (Phase 4); update it there
+      if the answer changes the code.
 
 - [ ] (Phase 3, non-blocking.) The app has not been looked at in a real browser: the checks were
       AppTest (every tab, runs, errors, stall notice), a headless `streamlit run` answering on
