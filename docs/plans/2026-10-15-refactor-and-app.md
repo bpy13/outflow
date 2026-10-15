@@ -86,8 +86,10 @@ Commands (env `outflow`): tests `pytest`, slow set `pytest -m slow`, lint
 
 Write each test before the code it checks. Every physics function's docstring cites the paper
 equation. The cross-checks against legacy (marked `legacy`) import the legacy functions by
-executing `version1/CRline.py`'s function block only: the code between its first `'''` and
-`# setting up parameter space`. Never run its run loop, which takes minutes.
+executing `version1/CRline.py`'s function block only: the code before
+`# setting up parameter space` (the file has no `'''` marker; its `import plotcool` is replaced
+by a stub, so `cool()` is not available there). This is the `crline` fixture in
+`tests/conftest.py`. Never run its run loop, which takes minutes.
 
 - [x] **Task 5: Constants and parameters**
   - Files: `src/outflow/constants.py`, `src/outflow/parameters.py`, `tests/unit/test_parameters.py`
@@ -99,7 +101,7 @@ executing `version1/CRline.py`'s function block only: the code between its first
     nfw_scale_radius, virial_radius` (cgs). Property `radiation_fraction`. Default `halo_mass`
     is derived from ρ_M = 8.81e-3 M☉/pc³.
 
-- [ ] **Task 6: Physics functions**
+- [x] **Task 6: Physics functions**
   - Files: `src/outflow/physics.py`, `tests/unit/test_physics.py`
   - Done when: tests pass for:
     - the NFW series and the closed form agreeing at r/R_s = 1e-3;

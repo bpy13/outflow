@@ -10,14 +10,7 @@ import math
 from dataclasses import dataclass
 
 from outflow import constants as const
-
-
-def nfw_mass_shape(radius: float, scale_radius: float) -> float:
-    """NFW mass shape xi(r) = ln((R_s + r)/R_s) - r/(R_s + r), paper eq. 29.
-
-    The enclosed halo mass is M(r) = 4 pi rho_M R_s^3 xi(r).
-    """
-    return math.log((scale_radius + radius) / scale_radius) - radius / (scale_radius + radius)
+from outflow.physics import nfw_mass_shape
 
 
 def nfw_total_mass(characteristic_density: float, scale_radius: float, virial_radius: float):
