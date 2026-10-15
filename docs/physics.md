@@ -74,11 +74,15 @@ switch at r_sb (density for r < r_sb, Alfvén speed for r ≤ r_sb). The port fo
 | `central_sound_speed_squared` | eq. 35 at r = 0 | with the L'Hôpital ratio v_A/v |
 | `sonic_trial`, `_sonic_trial`, `SonicTrial` | §2.3.2, §2.4 (code: `rsonic()`) | integrate from r = 0 until sonic or turning over |
 | `_bisect` | §2.3.2 (code: `gss()`) | bisection on ρ₀ |
+| `_brent`, `sonic_radius_mismatch` | §2.3.2 (not in the paper code; replaces the last `gss()` stage) | Brent's method on r_s(ρ₀) − r_sb (default) |
 | `find_central_density` | §2.3.2, §2.4 (code: `CRline()`) | ρ₀ for which the sonic radius is r_sb |
 
 The search: start at ρ₀ = 0.1 M☉/pc³, multiply by 10 until a trial turns over or reaches r_sb,
-bisect for the critical ("peak") ρ₀, then bisect for the ρ₀ whose sonic radius is r_sb. Trials
-use the inner density and Alfvén forms at every radius (the code's `'find0'` tag).
+bisect for the critical ("peak") ρ₀, then find the ρ₀ whose sonic radius is r_sb. The paper
+code bisects in that last stage; by default the port uses Brent's method (scipy's `brentq`)
+there, to the same precision with fewer trials (`method="bisection"` gives the paper code's
+search). Trials use the inner density and Alfvén forms at every radius (the code's `'find0'`
+tag).
 
 ## Solver (`solver.py`, `integrator.py`)
 

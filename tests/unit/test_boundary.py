@@ -25,6 +25,24 @@ def test_central_state_eqs_44_45():
     assert state.velocity_gradient == pytest.approx(q / (3 * rho0), rel=1e-14)
 
 
+def test_unknown_search_method_is_rejected():
+    with pytest.raises(ValueError, match="brent"):
+        boundary.find_central_density(WindParameters.paper_default(), method="secant")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("run_name", ["fig6_thermal", "fig7_B0_100uG", "fig8_kappa_1e5"])
+def test_brent_search_finds_the_bisection_density(run_name):
+    """Brent's method (default) and the paper code's bisection agree on rho_0.
+
+    Both stop when rho_0 is known to 1e-12 of the search range, so they agree to a few 1e-12.
+    """
+    run = next(r for figure in (6, 7, 8) for r in paper_runs(figure) if r.name == run_name)
+    brent = boundary.find_central_density(run.params, method="brent")
+    bisection = boundary.find_central_density(run.params, method="bisection")
+    assert brent == pytest.approx(bisection, rel=1e-11)
+
+
 def test_first_step_fallback_rescues_round_off_start():
     """A density where the first step from r = 0 sits on its round-off floor (Fig. 7, 100 uG).
 
