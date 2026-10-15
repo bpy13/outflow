@@ -60,6 +60,16 @@ def _x(profile: WindProfile) -> np.ndarray:
     return profile.r / profile.params.starburst_radius
 
 
+def _shown(profile: WindProfile, x_max: float) -> slice:
+    """The points up to x_max (plus the first one beyond, so curves reach the axis edge).
+
+    Points further out are left out so they don't stretch the y axes (profiles are often
+    computed well beyond the plotted range, e.g. to 100 r_sb for Fig. 6).
+    """
+    last = int(np.searchsorted(_x(profile), x_max, side="right"))  # r is non-decreasing
+    return slice(0, last + 1)
+
+
 def plot_profiles(profiles, labels=None, x_max: float = 5.0):
     """Four panels like the paper's Fig. 6: v, log n, log T and log pressures against r/r_sb.
 
@@ -81,14 +91,16 @@ def plot_profiles(profiles, labels=None, x_max: float = 5.0):
         _style_axis(axis, x_max, ylabel)
     with np.errstate(divide="ignore"):
         for profile, label, color in zip(profiles, labels, SERIES_COLORS, strict=False):
-            x = _x(profile)
-            axes[0].plot(x, profile.v / 1e5, color=color, linewidth=1.5, label=label)
-            axes[1].plot(x, np.log10(profile.n), color=color, linewidth=1.5)
-            axes[2].plot(x, np.log10(profile.T), color=color, linewidth=1.5)
+            shown = _shown(profile, x_max)
+            x = _x(profile)[shown]
+            axes[0].plot(x, profile.v[shown] / 1e5, color=color, linewidth=1.5, label=label)
+            axes[1].plot(x, np.log10(profile.n[shown]), color=color, linewidth=1.5)
+            axes[2].plot(x, np.log10(profile.T[shown]), color=color, linewidth=1.5)
             for name, style, _ in PRESSURE_STYLES:
-                axes[3].plot(x, np.log10(getattr(profile, name)), style, color=color, linewidth=1.5)
+                values = np.log10(getattr(profile, name)[shown])
+                axes[3].plot(x, values, style, color=color, linewidth=1.5)
     axes[0].legend(frameon=False, loc="lower right")
-    _fit_pressure_axis(axes[3], profiles)
+    _fit_pressure_axis(axes[3], profiles, x_max)
     _pressure_legend(axes[3])
     for axis in axes[2:]:
         axis.set_xlabel("r / r_sb")
@@ -105,13 +117,14 @@ def _pressure_legend(axis):
     axis.legend(handles=handles, frameon=False, loc="best")
 
 
-def _fit_pressure_axis(axis, profiles):
-    """Limit the log-pressure axis to the range outside the centre, where rho v^2 -> 0."""
+def _fit_pressure_axis(axis, profiles, x_max: float):
+    """Fit the log-pressure axis to the shown range outside the centre, where rho v^2 -> 0."""
     values = []
     for profile in profiles:
-        outside = profile.r > 0.1 * profile.params.starburst_radius
+        x = _x(profile)
+        selected = (x > 0.1) & (x <= x_max)
         for name, _, _ in PRESSURE_STYLES:
-            data = np.asarray(getattr(profile, name))[outside]
+            data = np.asarray(getattr(profile, name))[selected]
             data = data[data > 0]
             if data.size:
                 values.append(np.log10(data))
@@ -142,18 +155,19 @@ def plot_comparison(reference: WindProfile, others, labels=None, x_max: float = 
     with np.errstate(divide="ignore", invalid="ignore"):
         # Colours follow the entity: the reference takes the first colour, as in plot_profiles.
         for profile, label, color in zip(others, labels, SERIES_COLORS[1:], strict=False):
-            x = _x(profile)
-            ref = reference.interpolate(profile.r)
-            axes[0].plot(x, profile.v / ref["v"], color=color, linewidth=1.5, label=label)
-            axes[1].plot(x, profile.rho / ref["rho"], color=color, linewidth=1.5)
-            axes[2].plot(x, profile.T / ref["T"], color=color, linewidth=1.5)
+            shown = _shown(profile, x_max)
+            x = _x(profile)[shown]
+            ref = reference.interpolate(profile.r[shown])
+            axes[0].plot(x, profile.v[shown] / ref["v"], color=color, linewidth=1.5, label=label)
+            axes[1].plot(x, profile.rho[shown] / ref["rho"], color=color, linewidth=1.5)
+            axes[2].plot(x, profile.T[shown] / ref["T"], color=color, linewidth=1.5)
             reference_values = {
                 "P": ref["P"],
                 "Pc": ref["Pc"],
                 "ram_pressure": ref["rho"] * ref["v"] ** 2,
             }
             for name, style, _ in PRESSURE_STYLES:
-                ratio = getattr(profile, name) / reference_values[name]
+                ratio = getattr(profile, name)[shown] / reference_values[name]
                 axes[3].plot(x, ratio, style, color=color, linewidth=1.5)
     axes[0].legend(frameon=False, loc="best")
     _pressure_legend(axes[3])

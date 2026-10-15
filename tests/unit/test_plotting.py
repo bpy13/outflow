@@ -35,3 +35,18 @@ def test_plot_comparison_saves_png(tmp_path, fig7_profiles):
 def test_too_many_profiles_rejected(fig7_profiles):
     with pytest.raises(ValueError):
         plot_profiles(fig7_profiles * 3)
+
+
+def test_curves_are_trimmed_to_the_shown_range():
+    # fig6_thermal was computed to 100 r_sb; with x_max = 5 nothing far beyond the axis edge
+    # may be drawn, or the y axes are scaled to values that are never shown.
+    profile = load_paper_profile("fig6_thermal")
+    for figure in (
+        plot_profiles([profile], x_max=5),
+        plot_comparison(profile, [load_paper_profile("fig6_cosmic_ray")], x_max=5),
+    ):
+        for axis in figure.axes:
+            for line in axis.get_lines():
+                x = line.get_xdata()
+                if len(x) > 2:  # skip the reference line at 1 and legend proxies
+                    assert max(x) < 6, max(x)
