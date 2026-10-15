@@ -14,7 +14,7 @@ dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
     "matplotlib>=3.8",
-    "streamlit>=1.30",
+    "streamlit>=1.43",  # download_button(on_click="ignore"); tested with 1.66
     "plotly>=5.18",
 ]
 
