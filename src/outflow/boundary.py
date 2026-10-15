@@ -19,6 +19,7 @@ Trial solutions use the inner forms of density and Alfven speed at every radius
 (``searching=True``, the paper code's tag ``'find0'``).
 """
 
+import functools
 import math
 from dataclasses import dataclass
 
@@ -26,7 +27,12 @@ from outflow import physics
 from outflow.constants import GAMMA_CR, GAMMA_GAS, PARSEC, SOLAR_MASS
 from outflow.equations import WindEquations
 from outflow.errors import NoSolutionError
-from outflow.integrator import cash_karp_step, next_step_size, relative_error
+from outflow.integrator import (
+    _GROWTH_WHEN_ERROR_IS_ZERO,
+    cash_karp_step,
+    next_step_size,
+    relative_error,
+)
 from outflow.parameters import WindParameters
 
 # Numerical settings of the paper code, converted from its natural units (pc, Msun).
@@ -49,6 +55,10 @@ MAX_BRACKET_HALVINGS = 40
 # CR-driven winds (Fig. 7, B_0 = 100 uG) it is not, and the step size collapses. Only then is
 # the integration restarted, accepting the first step at this looser tolerance.
 FIRST_STEP_FALLBACK_TOLERANCE = 100 * STEP_TOLERANCE
+
+# Use the compiled copy of the trial integration (outflow._compiled) when Numba is installed.
+# It gives the same results, about 30x faster. Set to False to run the plain Python version.
+USE_COMPILED_TRIALS = True
 
 # Marker for a trial whose step size collapsed before it became sonic or turned over (the
 # paper code returns the string 'RKfail'). It is treated as larger than any gradient, which is
@@ -131,6 +141,53 @@ def sonic_trial(equations: WindEquations, state: CentralState) -> SonicTrial:
 def _sonic_trial(
     equations: WindEquations, state: CentralState, first_step_tolerance: float
 ) -> SonicTrial:
+    """One trial: the compiled copy if Numba is installed and there is no cooling, else Python.
+
+    Both give bit-for-bit the same result (tests/unit/test_compiled.py).
+    """
+    if USE_COMPILED_TRIALS and equations.cooling_function is None:
+        kernel = _compiled_kernel()
+        if kernel is not None:
+            radius, gradient = kernel.sonic_trial(
+                kernel.pack_parameters(equations.params),
+                state.pressure,
+                state.cr_pressure,
+                state.velocity_gradient,
+                central_sound_speed_squared(state),
+                INITIAL_STEP,
+                STEP_TOLERANCE,
+                first_step_tolerance,
+                SMALLEST_STEP_FRACTION,
+                _GROWTH_WHEN_ERROR_IS_ZERO,
+            )
+            return SonicTrial(radius, gradient)
+    return _sonic_trial_python(equations, state, first_step_tolerance)
+
+
+def compiled_trials_available() -> bool:
+    """True if the central-density search runs compiled (Numba installed and switched on)."""
+    return USE_COMPILED_TRIALS and _compiled_kernel() is not None
+
+
+@functools.cache
+def _compiled_kernel():
+    """The Numba-compiled trial integration (outflow._compiled), or None without Numba.
+
+    Imported on first use, not when the package is imported (Numba takes a moment to load).
+    The first use after installing compiles it (a few seconds); the compiled code is then
+    cached on disk.
+    """
+    try:
+        from outflow import _compiled
+    except ImportError:
+        return None
+    return _compiled
+
+
+def _sonic_trial_python(
+    equations: WindEquations, state: CentralState, first_step_tolerance: float
+) -> SonicTrial:
+    """The trial integration in plain Python: the readable reference for outflow._compiled."""
     starburst_radius = equations.starburst_radius
 
     def derivative(r, y):
