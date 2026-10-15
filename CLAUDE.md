@@ -12,9 +12,9 @@ Read these before substantial changes:
 - `docs/decisions.md` – what was decided and why (don't re-litigate without a reason)
 - `docs/open-items.md` – pending work and questions waiting on the user
 - `docs/plans/` – the latest plan
-- `docs/physics.md` – paper equation ↔ code map (once it exists)
-- `docs/architecture.md` – modules, data flow, where things live (once it exists)
-- `docs/known-issues.md` – limits and traps found so far (once it exists)
+- `docs/physics.md` – paper equation ↔ code map
+- `docs/architecture.md` – modules, data flow, where things live
+- `docs/known-issues.md` – limits and traps found so far
 - `README.md` – user-facing setup and commands
 
 ## Environment
@@ -23,12 +23,17 @@ Read these before substantial changes:
 - Run the app: `streamlit run app/streamlit_app.py`
 - Tests: `pytest` (fast); `pytest -m slow` for the full paper-reproduction set
 - Lint: `ruff check . ; ruff format --check .`
+- Docs coverage: `python scripts/check_docs.py` (every physics/equations/boundary function in
+  `docs/physics.md`, every module in `docs/architecture.md`)
+- Examples: `python examples/quickstart.py`, `python examples/reproduce_fig6.py` (writes
+  `examples/fig6.png`, git-ignored)
+- CI: `.github/workflows/ci.yml` runs lint and the fast tests on every push (`gh run watch`)
 
 ## Project rules
 - `legacy/` (paper-era scripts `Brian2019MNRAS/`, the handover attempt `outflow.py`, the paper
   PDF) is git-ignored and is the physics reference. Never edit it; never commit it.
 - "Same as the paper" means the paper code `legacy/Brian2019MNRAS/version1/CRline.py` and its
-  output, now stored in `tests/reference/`, not `legacy/outflow.py` (which has a temperature
+  output, now stored as package data in `src/outflow/data/paper/`, not `legacy/outflow.py` (which has a temperature
   bug and auto-enables cooling).
 - Defaults follow the paper code exactly (values, rounded constants, tolerances, numerical
   method). Changing any of them is a decision for the user.
