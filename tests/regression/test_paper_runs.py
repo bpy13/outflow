@@ -10,7 +10,14 @@ import time
 import numpy as np
 import pytest
 
-from outflow import NoSolutionError, WindProfile, load_paper_profile, paper_runs, solve_wind
+from outflow import (
+    NoSolutionError,
+    WindParameters,
+    WindProfile,
+    load_paper_profile,
+    paper_runs,
+    solve_wind,
+)
 from outflow.constants import BOLTZMANN, MEAN_PARTICLE_MASS
 
 TOLERANCE = 1e-3
@@ -103,6 +110,17 @@ def test_no_solution_error_is_plain_language():
     error = NoSolutionError("No stationary wind solution was found.", details="x")
     assert str(error) == "No stationary wind solution was found."
     assert error.details == "x"
+
+
+def test_never_supersonic_is_no_solution_not_a_stall():
+    # Weak thermal driving with very strong radiation: no trial central density makes the flow
+    # sonic at r_sb, so the outward profile never becomes supersonic. That is not a wind that
+    # "stalled" (fell back below the sound speed); there is no transonic solution at all.
+    params = WindParameters.from_astro_units(
+        thermal_fraction=0.01, cr_fraction=0.0, opacity_cm2_g=1e7
+    )
+    with pytest.raises(NoSolutionError, match="never becomes supersonic"):
+        solve_wind(params, outer_radius=5 * params.starburst_radius)
 
 
 @pytest.mark.slow

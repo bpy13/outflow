@@ -28,8 +28,11 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
          on. The port does the same. Default if you say "ok": keep both as is and list them in
          `docs/known-issues.md`; alternative: raise `NoSolutionError` in case 2 so the app
          says "no stationary wind solution" instead of showing an unconverged profile.
-      The current behaviour is described in `docs/known-issues.md` (Phase 4); update it there
-      if the answer changes the code.
+      Partly addressed after the pre-release review: a profile that never becomes supersonic
+      now raises `NoSolutionError` instead of being reported as a "stall" (e.g. thermal 0.01,
+      CR 0, κ = 1e7 cm²/g). Still open: whether to raise for every unconverged case 2, even
+      when the profile does become supersonic somewhere. The current behaviour is described in
+      `docs/known-issues.md`; update it there if the answer changes the code.
 
 - [ ] (Phase 3, non-blocking.) The app has not been looked at in a real browser: the checks were
       AppTest (every tab, runs, errors, stall notice), a headless `streamlit run` answering on
@@ -44,7 +47,8 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
       Found in Phase 1, Task 4. Done in Task 8: `WindProfile.interpolate` keeps the last point
       per radius.
 
-- [ ] (Phase 4, Task 17, non-blocking, cosmetic.) `outflow.plotting.plot_profiles` and
+- [x] (Phase 4, Task 17, non-blocking, cosmetic; fixed after the pre-release review: curves are
+      trimmed to the shown range.) `outflow.plotting.plot_profiles` and
       `plot_comparison` scale the y axes over the whole profile, not only the shown r range.
       With profiles computed to 100 r_sb and `x_max=5` (as in `examples/reproduce_fig6.py`),
       the n, T and pressure panels leave empty space (e.g. the pressure axis reaches 1e-16.5

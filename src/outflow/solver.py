@@ -65,6 +65,14 @@ def solve_wind(
     return integrate_outward(equations, state, outer_radius)
 
 
+def _never_supersonic(r: float, starburst_radius: float) -> NoSolutionError:
+    return NoSolutionError(
+        "No stationary wind solution was found for these inputs: the flow never becomes "
+        "supersonic, so it is not a wind that escapes the starburst region.",
+        details=f"still subsonic at r = {r / starburst_radius:.3f} r_sb",
+    )
+
+
 class _FirstStepFailed(Exception):
     """The step size collapsed on the first step from r = 0 (round-off floor)."""
 
@@ -106,12 +114,19 @@ def _integrate_outward(
     densities, alfven_speeds = [state.density], [0.0]
     steps = 0
     stalled = False
+    ever_supersonic = False
     while r < outer_radius:
         if r > stall_check_start:
             cs2 = equations.sound_speed_squared(r, y[0], y[1], y[2], False)
             if y[0] ** 2 <= cs2:
+                # Subsonic beyond 1.1 r_sb. Only a wind that was supersonic has stalled; one that
+                # never got there has no transonic solution (e.g. the r_s < r_sb case, where the
+                # paper code's central-density search keeps an unconverged trial).
+                if not ever_supersonic:
+                    raise _never_supersonic(r, starburst_radius)
                 stalled = True  # fell back to subsonic: the wind stalls
                 break
+            ever_supersonic = True
         steps += 1
         if steps > MAX_STEPS or h < starburst_radius * boundary.SMALLEST_STEP_FRACTION:
             if r == 0 and first_step_tolerance == boundary.STEP_TOLERANCE:
@@ -122,6 +137,8 @@ def _integrate_outward(
                     "broke down inside the starburst region.",
                     details=f"stopped at r = {r:.6e} cm after {steps} steps, step {h:.3e} cm",
                 )
+            if not ever_supersonic:
+                raise _never_supersonic(r, starburst_radius)
             stalled = True  # the step collapsed at a singular point beyond r_sb
             break
         new_y, error = cash_karp_step(derivative, h, r, y, slope)

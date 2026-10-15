@@ -51,14 +51,16 @@ on them is open (see `open-items.md`); this is the current behaviour:
 2. **If even the critical central density gives a sonic radius inside r_sb** (strong radiation
    or weak thermal driving), the paper code keeps the last density of its ×10 loop
    (0.1, 1, 10 … M☉/pc³), which is not a converged solution, and goes on. The port does the
-   same, so such inputs return a profile without an error even though its sonic point is not
-   at r_sb.
+   same. If the resulting profile never becomes supersonic, the solver raises
+   `NoSolutionError` ("the flow never becomes supersonic") rather than reporting a stall. If it
+   does become supersonic somewhere, the profile is returned, but its sonic point is not at r_sb.
 
 ## Stalled winds
 
 A wind that falls back to subsonic beyond 1.1 r_sb (for example in a heavy halo) is returned as
 a result with `stalled=True`, ending at the stall radius, not raised as an error. A step size
-that collapses beyond 1.1 r_sb is also treated as a stall. The published `fig9_halo_10x` run
+that collapses beyond 1.1 r_sb is also treated as a stall. Only a wind that was supersonic can
+stall; a flow still subsonic beyond 1.1 r_sb that never was supersonic is `NoSolutionError`. The published `fig9_halo_10x` run
 stalls at about 44.8 r_sb.
 
 ## Safety limits not in the paper code
