@@ -251,10 +251,14 @@ by a stub, so `cool()` is not available there). This is the `crline` fixture in
     `known-issues.md` also covers the first-step fallback, the two untested ρ₀-search
     branches (current behaviour), stalled winds, safety limits and repeated radii.
 
-- [ ] **Task 17: Examples**
+- [x] **Task 17: Examples**
   - Files: `examples/quickstart.py`, `examples/reproduce_fig6.py`
   - Done when: both run in the env (`python examples/...`) and `reproduce_fig6.py` writes
     `fig6.png`. Add `examples/*.png` to `.gitignore`.
+  - As built: `reproduce_fig6.py` also prints each run's largest difference from the published
+    profile (2.1e-4, 1.2e-4, 1.4e-4, all in P) and takes about 20 s. The figure showed that the
+    matplotlib helpers scale y over the whole profile, not only the shown r range (cosmetic;
+    recorded in open-items).
 
 - [ ] **Task 18: CI**
   - Files: `.github/workflows/ci.yml`

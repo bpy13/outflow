@@ -44,6 +44,13 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
       Found in Phase 1, Task 4. Done in Task 8: `WindProfile.interpolate` keeps the last point
       per radius.
 
+- [ ] (Phase 4, Task 17, non-blocking, cosmetic.) `outflow.plotting.plot_profiles` and
+      `plot_comparison` scale the y axes over the whole profile, not only the shown r range.
+      With profiles computed to 100 r_sb and `x_max=5` (as in `examples/reproduce_fig6.py`),
+      the n, T and pressure panels leave empty space (e.g. the pressure axis reaches 1e-16.5
+      although the curves shown stay above 1e-13). The app is not affected (it trims curves to
+      the shown range). Fix: trim each curve to r ≤ x_max r_sb before plotting, as the app does.
+
 ## Later
 
 - Port Figs. 1–5 scripts and the §3.5 line-emission work (Figs. 10–11).
