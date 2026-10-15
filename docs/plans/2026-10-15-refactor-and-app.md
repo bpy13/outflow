@@ -61,7 +61,7 @@ Commands (env `outflow`): tests `pytest`, slow set `pytest -m slow`, lint
     `git status --porcelain --ignored` lists `legacy/` only as ignored.
   - Notes: move, never delete. Do not edit anything inside `legacy/`.
 
-- [ ] **Task 3: Convert the cooling table**
+- [x] **Task 3: Convert the cooling table**
   - Files: create `scripts/convert_paper_data.py` (cooling part), `src/outflow/data/cloudy_cooling.csv`,
     `tests/integration/test_package_data.py`
   - Done when: the script runs, and a `legacy`-marked test confirms the CSV values equal
