@@ -61,6 +61,11 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
 
 ## Later
 
+- Numba (compiling the integrator and equations to machine code) for a further speed-up,
+  likely 20–50× (not measured). Costs: a new dependency, a few seconds of compiling on first
+  use, and the equations rewritten as plain functions, which reads less like the paper. (user,
+  2026-10-15: "leave numba for later")
+
 - Port Figs. 1–5 scripts and the §3.5 line-emission work (Figs. 10–11).
 - Validate the experimental cooling option against `Silich.py` (Fig. 2).
 - Possible erratum on Ė in Table 1 (user's decision).

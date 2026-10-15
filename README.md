@@ -78,7 +78,8 @@ streamlit run app/streamlit_app.py
 
 Tabs: **Explore** (change any input, overlay runs, download CSV), **Fig. 6–9** (recompute the
 paper's run sets and compare them with the published curves) and **About**. Every run is
-computed when you press its button; a figure tab takes 20–40 s.
+computed when you press its button. A figure tab solves its runs at the same time, one per CPU
+core, so it takes about as long as its slowest run (about 5 s on a multi-core computer).
 
 ## How the results compare with the paper
 
@@ -86,6 +87,11 @@ The physics and numerical method are a port of the code that made the published 
 published runs are recomputed and compared between 0.2 r_sb and the outer radius: the largest
 relative differences are about 3e-5 in velocity and 2e-4 in pressure (the tests allow 1e-3). The
 thermal-only case matches the analytic Chevalier & Clegg wind to 3e-6.
+
+One step differs from the paper code, for speed: the last stage of the search for the central
+density uses Brent's method instead of bisection, to the same precision (central densities agree
+to 2e-12). `outflow.boundary.find_central_density(params, method="bisection")` gives the paper
+code's search.
 
 **A note on Ė.** The published Figs. 6–9 were made with an energy injection rate
 Ė = 4.2e41 erg/s (the value in the paper's code), although the paper's Table 1 lists

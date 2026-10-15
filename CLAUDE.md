@@ -36,7 +36,13 @@ Read these before substantial changes:
   output, now stored as package data in `src/outflow/data/paper/`, not `legacy/outflow.py` (which has a temperature
   bug and auto-enables cooling).
 - Defaults follow the paper code exactly (values, rounded constants, tolerances, numerical
-  method). Changing any of them is a decision for the user.
+  method). Changing any of them is a decision for the user. One such decision so far: the last
+  stage of the ρ₀ search uses Brent's method (`docs/decisions.md`, "Speed").
+- A speed-up that changes results is a numerics change (the user's decision). To show a
+  speed-up changes nothing, use `tests/unit/test_integrator.py` (bit-identical RK step) and
+  compare all 14 paper runs before and after.
+- The app script keeps its `if __name__ == "__main__": main()` guard: the figure tabs' worker
+  processes re-import it.
 - Cooling is off by default and is not exposed in the UI.
 
 ## Conventions

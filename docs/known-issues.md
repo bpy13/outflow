@@ -69,6 +69,20 @@ The central-density search stops after 40 increases by ×10 (`NoSolutionError`).
 integration stops after 2 000 000 steps: inside 1.1 r_sb this raises `NoSolutionError`, beyond
 it the profile is returned as stalled. Neither limit is reached by the published runs.
 
+## Profiles are sensitive to ρ₀ at the 1e-4 level
+
+Near the sonic point the solution is very sensitive to the central density: changing ρ₀ by
+about 1e-12 (the search's own precision) moves the profiles by up to 2e-4 relative. This is why
+Brent's method and the paper code's bisection, which agree on ρ₀ to 2e-12, give profiles that
+differ by up to 2e-4, and why the match to the published runs cannot be much better than
+that. Differences of this size are far below what is visible in a plot.
+
+## Figure tabs on machines with few cores
+
+The figure tabs solve their runs in parallel, one process per CPU core. On a machine or host
+with one or two cores (e.g. free cloud hosting) the gain is correspondingly smaller. Where
+worker processes cannot be started at all, the runs are solved one after another.
+
 ## Repeated radii in the published data
 
 The published profiles repeat some radii (where the step size fell below round-off near r_sb,
