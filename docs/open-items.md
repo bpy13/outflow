@@ -61,6 +61,9 @@ here; a limit or trap we live with goes in `known-issues.md`. Each item in one p
 
 ## Later
 
+- Compile the outward integration too (now ~0.1 s per run in Python; only worth it if many
+  runs are needed, e.g. parameter scans).
+
 - Port Figs. 1–5 scripts and the §3.5 line-emission work (Figs. 10–11).
 - Validate the experimental cooling option against `Silich.py` (Fig. 2).
 - Possible erratum on Ė in Table 1 (user's decision).

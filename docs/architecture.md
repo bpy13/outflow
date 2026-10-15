@@ -37,7 +37,8 @@ paper.load_paper_profile (published runs, package data CSV)
 | `physics.py` | single formulas of the paper (density, Alfvén speed, c\*², luminosity, radiative force and heating, NFW gravity) |
 | `equations.py` | `WindEquations`: d(v, P, P_C)/dr, inner and outer equations |
 | `integrator.py` | Cash–Karp step, error measure and step-size rule of the paper code |
-| `boundary.py` | central values (eqs. 44–45) and the search for ρ₀ |
+| `boundary.py` | central values (eqs. 44–45) and the search for ρ₀ (last stage: Brent's method by default, or the paper code's bisection) |
+| `_compiled.py` | optional Numba copy of the trial integration (physics, equations, Cash–Karp step, `_sonic_trial_python`), bit-identical, ~30× faster; loaded on first use only if Numba is installed |
 | `solver.py` | `solve_wind` and the outward integration, stall detection |
 | `profile.py` | `WindProfile`: arrays, derived quantities, interpolation, comparison, CSV read/write |
 | `paper.py` | the 14 published runs (`paper_runs`) and their saved profiles (`load_paper_profile`) |
@@ -60,6 +61,13 @@ sit on top.
 
 Runs are computed fresh on each button press (no caching). Explore keeps up to 8 runs of the
 session in `st.session_state` for overlay. Cooling is not offered in the app.
+
+A figure tab solves its runs one after another in the app's own process when the compiled
+search is available (a run then takes about 0.1 s, less than starting a worker process).
+Without Numba it solves them in parallel (`solve_runs_in_parallel`: a `ProcessPoolExecutor`
+with one worker per run, up to the number of CPU cores), and falls back to one after another
+if worker processes cannot be started. Workers re-import the app script, so its page code runs
+only under `if __name__ == "__main__"`.
 
 ## Other folders
 

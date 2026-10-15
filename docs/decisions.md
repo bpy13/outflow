@@ -32,7 +32,9 @@ minor decisions made without asking; the user can overturn them.
   thermal-only limit. (user, default accepted)
 - No command-line tool. The scriptable interface is the Python API; the UI is the only app.
   This overrides the "CLI/UI parity" app convention. (user)
-- Speed improvements are out of scope. (Claude's call; never raised as a goal)
+- Speed improvements are out of scope. (Claude's call; never raised as a goal) **Reversed
+  2026-10-15:** the user asked for speed-ups 1, 2 and 4 of the proposal (see "Speed"); Numba
+  (compiling the hot loop) is left for later.
 
 ## Physics and numerics (follow the paper code)
 
@@ -60,6 +62,8 @@ minor decisions made without asking; the user can overturn them.
     (dv/dr = q/3ρ₀, dv_A/dr = B₀/(r_sb √(4πρ₀))).
   - ρ₀ found as in `CRline.CRline()`: start at 0.1 (natural units), multiply by 10 until the
     trial solution turns over or reaches r_sb, bisect for the peak, then bisect for r_s = r_sb.
+    **Changed 2026-10-15 (user):** the last stage uses Brent's method by default (see "Speed");
+    the paper code's bisection stays available as `method="bisection"`.
   - Source-term ("inner") equations are used while v² ≤ c*² (subsonic), as the paper code does;
     density and Alfvén speed switch at r_sb (ρ: r < r_sb; v_A: r ≤ r_sb). Documented in
     `docs/physics.md` as the paper code's convention.
@@ -89,6 +93,55 @@ minor decisions made without asking; the user can overturn them.
   astropy dependency. (user accepted default)
 - The temperature is computed from each radius's own density (the `outflow.py` bug is not
   carried over).
+
+## Speed (2026-10-15, user: "implement 1, 2, 4, leave numba for later")
+
+Baseline: the 14 paper runs took 95 s in total; 96 % of a run is the ρ₀ search (81 trial
+integrations for the paper default), and half of each trial was the Runge–Kutta step's Python
+overhead. Built on branch `feature/faster-solver`:
+
+1. **Faster Runge–Kutta step, same results.** `cash_karp_step` computes its weighted sums with
+   `sum(map(mul, weights, increments))`. The products and their order are unchanged, so every
+   result is bit-for-bit the same as before (all 14 runs checked; a unit test pins it against
+   the plain loop). Writing the sums as plain `a + b + c` would be faster still (~1.6× vs
+   1.36×) but not identical: since Python 3.12, `sum()` adds floats with compensated
+   summation. (Claude's call: keep results identical.) 95 s → 70 s.
+2. **Figure tabs solve their runs in parallel**, one process per run (up to the number of CPU
+   cores), with a fallback to one after another if processes cannot be started. Results are
+   unchanged. Fig. 7 tab: 20–40 s before, 5.5 s now (measured in the real app on a 20-core
+   machine). The app script is guarded by `if __name__ == "__main__"`, because worker
+   processes re-import it.
+3. **Brent's method for the last stage of the ρ₀ search** (finding r_s = r_sb), stopping at the
+   same absolute precision as the bisection (1e-12 of the search range). The first two stages
+   (×10 scan, peak bisection) are unchanged: the peak is where the trial switches from wind to
+   breeze, a jump that suits bisection only. Measured over the 14 runs: ρ₀ differs from the
+   bisection result by ≤ 1.8e-12; profiles move by ≤ 2.1e-4 relative (the transonic solution
+   is that sensitive to ρ₀ at this precision); the match to the published runs stays within
+   1.7e-4 (was 2.1e-4). 70 s → 43.5 s. The paper code's search remains available as
+   `find_central_density(..., method="bisection")`.
+
+Overall: 95 s → 43.5 s for the 14 runs (2.2×); a default Explore run about 1.4 s.
+
+4. **Numba-compiled trial integration** (user, 2026-10-15: "try numba now"; branch
+   `experiment/numba`). `src/outflow/_compiled.py` is a line-by-line compiled copy of the trial
+   integration of the ρ₀ search (physics, equations without cooling, Cash–Karp step,
+   `_sonic_trial`). The Python modules stay the readable reference. Decisions (Claude's calls):
+   - **Bit-identical, not just close.** Python's `x**2` calls the C library's `pow`, which
+     differs from the exactly rounded `x*x` in ~0.06 % of cases (`x**3`: ~26 %), and a
+     compiler replaces constant powers by multiplications. So every exponent is read from the
+     parameter array at run time (the compiler cannot fold it), and sums repeat Python 3.12's
+     compensated `sum()`. Result: all 14 runs bit-for-bit identical; tests compare compiled and
+     Python trials on 45 inputs × 2 first-step tolerances, and all 14 full runs (slow).
+   - **Optional:** extra `fast` (`pip install -e ".[fast]"`), in `environment.yml` and in CI;
+     without Numba the Python code runs. Loaded on first use, not at import.
+   - **Only the trials are compiled** (96 % of the time). The outward integration stays in
+     Python (~0.1 s per run); cooled winds use the Python code.
+   - **App:** with the compiled search, figure tabs solve their runs one after another in the
+     app's process (worker start-up would take longer than the runs); the parallel pool is
+     kept for installs without Numba.
+   Measured: 14 runs 43 s → 1.4 s; default solve 1.37 s → 0.10 s; Fig. 7 tab 1.5 s (3.6 s on
+   the first press after the app starts, which loads Numba). Compiling takes ~5 s once after
+   installing; the compiled code is cached on disk (~0.2 s to load).
 
 ## Verification
 
@@ -158,7 +211,8 @@ From the builder check on these documents. All minor; the user can overturn any.
   made in this session are kept in the page's memory so they can be overlaid, and can be
   cleared.
 - **App, progress:** a progress indicator shows "run k of n" while a figure tab computes
-  (about 20–40 s locally).
+  (about 20–40 s locally). Since 2026-10-15 the runs are solved in parallel and it shows
+  "k of n runs finished" (about 5 s locally).
 - **App, axes:** as in the published figures. x is r/r_sb on a linear axis (0–5 for
   Figs. 6–8, 0–30 for Fig. 9); v in km/s, n in cm⁻³ (log), T in K (log), P in erg cm⁻³ (log).
   The Explore tab has a log-r toggle.

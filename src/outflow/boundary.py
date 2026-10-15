@@ -10,13 +10,16 @@ The search, as in the paper code:
    (dv/dr <= 0 while still subsonic: a "breeze", rho_0 too high) or reaches r_sb.
 2. Bisect between 0 and that rho_0 for the critical value that separates winds that turn
    supersonic from breezes (the "peak"); this gives the largest possible sonic radius.
-3. If that sonic radius lies beyond r_sb, bisect between 0 and the peak value for the rho_0
-   whose sonic radius is r_sb.
+3. If that sonic radius lies beyond r_sb, find the rho_0 between 0 and the peak value whose
+   sonic radius is r_sb. The paper code bisects; by default this port uses Brent's method,
+   which reaches the same precision with fewer trials (``method="bisection"`` restores the
+   paper code's search).
 
 Trial solutions use the inner forms of density and Alfven speed at every radius
 (``searching=True``, the paper code's tag ``'find0'``).
 """
 
+import functools
 import math
 from dataclasses import dataclass
 
@@ -24,7 +27,12 @@ from outflow import physics
 from outflow.constants import GAMMA_CR, GAMMA_GAS, PARSEC, SOLAR_MASS
 from outflow.equations import WindEquations
 from outflow.errors import NoSolutionError
-from outflow.integrator import cash_karp_step, next_step_size, relative_error
+from outflow.integrator import (
+    _GROWTH_WHEN_ERROR_IS_ZERO,
+    cash_karp_step,
+    next_step_size,
+    relative_error,
+)
 from outflow.parameters import WindParameters
 
 # Numerical settings of the paper code, converted from its natural units (pc, Msun).
@@ -36,6 +44,10 @@ FIRST_DENSITY_TRIAL = 0.1 * SOLAR_MASS / PARSEC**3  # first rho_0 trial, g/cm^3
 SMALLEST_STEP_FRACTION = 1e-50
 # Safety limit (not in the paper code): stop multiplying rho_0 by 10 after this many tries.
 MAX_DENSITY_INCREASES = 40
+# Brent search (not in the paper code): halve rho_0 at most this many times looking for a sonic
+# radius inside r_sb before falling back to the bisection. 40 halvings reach the bisection's
+# own precision (2^-40 ~ 1e-12).
+MAX_BRACKET_HALVINGS = 40
 # Fallback for the first step from r = 0 (not in the paper code). Near r = 0 the equations are
 # unstable within a step: round-off in the Runge-Kutta stages grows by a factor of ~40 per
 # stage, whatever the step size, so the error estimate of the first step has a floor of about
@@ -43,6 +55,10 @@ MAX_DENSITY_INCREASES = 40
 # CR-driven winds (Fig. 7, B_0 = 100 uG) it is not, and the step size collapses. Only then is
 # the integration restarted, accepting the first step at this looser tolerance.
 FIRST_STEP_FALLBACK_TOLERANCE = 100 * STEP_TOLERANCE
+
+# Use the compiled copy of the trial integration (outflow._compiled) when Numba is installed.
+# It gives the same results, about 30x faster. Set to False to run the plain Python version.
+USE_COMPILED_TRIALS = True
 
 # Marker for a trial whose step size collapsed before it became sonic or turned over (the
 # paper code returns the string 'RKfail'). It is treated as larger than any gradient, which is
@@ -125,6 +141,53 @@ def sonic_trial(equations: WindEquations, state: CentralState) -> SonicTrial:
 def _sonic_trial(
     equations: WindEquations, state: CentralState, first_step_tolerance: float
 ) -> SonicTrial:
+    """One trial: the compiled copy if Numba is installed and there is no cooling, else Python.
+
+    Both give bit-for-bit the same result (tests/unit/test_compiled.py).
+    """
+    if USE_COMPILED_TRIALS and equations.cooling_function is None:
+        kernel = _compiled_kernel()
+        if kernel is not None:
+            radius, gradient = kernel.sonic_trial(
+                kernel.pack_parameters(equations.params),
+                state.pressure,
+                state.cr_pressure,
+                state.velocity_gradient,
+                central_sound_speed_squared(state),
+                INITIAL_STEP,
+                STEP_TOLERANCE,
+                first_step_tolerance,
+                SMALLEST_STEP_FRACTION,
+                _GROWTH_WHEN_ERROR_IS_ZERO,
+            )
+            return SonicTrial(radius, gradient)
+    return _sonic_trial_python(equations, state, first_step_tolerance)
+
+
+def compiled_trials_available() -> bool:
+    """True if the central-density search runs compiled (Numba installed and switched on)."""
+    return USE_COMPILED_TRIALS and _compiled_kernel() is not None
+
+
+@functools.cache
+def _compiled_kernel():
+    """The Numba-compiled trial integration (outflow._compiled), or None without Numba.
+
+    Imported on first use, not when the package is imported (Numba takes a moment to load).
+    The first use after installing compiles it (a few seconds); the compiled code is then
+    cached on disk.
+    """
+    try:
+        from outflow import _compiled
+    except ImportError:
+        return None
+    return _compiled
+
+
+def _sonic_trial_python(
+    equations: WindEquations, state: CentralState, first_step_tolerance: float
+) -> SonicTrial:
+    """The trial integration in plain Python: the readable reference for outflow._compiled."""
     starburst_radius = equations.starburst_radius
 
     def derivative(r, y):
@@ -181,12 +244,55 @@ def _bisect(equations: WindEquations, params, low: float, high: float, find_peak
     return trial.radius, low
 
 
-def find_central_density(params: WindParameters, equations: WindEquations | None = None):
+def _brent(equations: WindEquations, params, peak_density: float) -> float:
+    """rho_0 in (0, peak_density) whose sonic radius is r_sb, by Brent's method.
+
+    Replaces the paper code's second bisection (decision of 2026-10-15, docs/decisions.md):
+    the sonic radius changes smoothly with rho_0 below the peak, so Brent's method (bisection
+    combined with secant and inverse quadratic steps) needs about a quarter of the trials. It
+    stops at the same absolute precision as the bisection, SEARCH_TOLERANCE * peak_density.
+    Falls back to the bisection if the bracket cannot be set up.
+    """
+    from scipy.optimize import brentq  # imported here: only needed for this search
+
+    def sonic_radius_mismatch(density: float) -> float:
+        trial = sonic_trial(equations, central_state(params, density))
+        return trial.radius - params.starburst_radius  # > 0: rho_0 too high
+
+    high = peak_density
+    if not sonic_radius_mismatch(high) > 0:
+        return _bisect(equations, params, 0.0, peak_density, find_peak=False)[1]
+    # Lower end of the bracket: halve rho_0 until the sonic radius lies inside r_sb (these are
+    # the same first trials the bisection makes).
+    low = peak_density / 2.0
+    for _ in range(MAX_BRACKET_HALVINGS):
+        mismatch = sonic_radius_mismatch(low)
+        if mismatch == 0:
+            return low
+        if mismatch < 0:
+            return brentq(sonic_radius_mismatch, low, high, xtol=SEARCH_TOLERANCE * peak_density)
+        high, low = low, low / 2.0
+    return _bisect(equations, params, 0.0, peak_density, find_peak=False)[1]
+
+
+def find_central_density(
+    params: WindParameters, equations: WindEquations | None = None, method: str = "brent"
+):
     """rho_0 for which the wind's sonic radius is r_sb, as in the paper code's ``CRline()``.
+
+    Args:
+        params: model inputs.
+        equations: the wind equations for ``params`` (built if not given).
+        method: how the last stage finds the rho_0 with sonic radius r_sb: ``"brent"``
+            (default; the whole solve is about 1.6x faster) or ``"bisection"`` (the paper
+            code's method).
+            Both stop at the same precision; the first two stages are the paper code's.
 
     Raises:
         NoSolutionError: if no trial density turns the flow over within the safety limit.
     """
+    if method not in ("brent", "bisection"):
+        raise ValueError(f"method must be 'brent' or 'bisection', got {method!r}")
     if equations is None:
         equations = WindEquations(params)
     density = FIRST_DENSITY_TRIAL
@@ -203,6 +309,9 @@ def find_central_density(params: WindParameters, equations: WindEquations | None
         trial = sonic_trial(equations, central_state(params, density))
     sonic_radius, peak_density = _bisect(equations, params, 0.0, density, find_peak=True)
     if sonic_radius > params.starburst_radius:
-        _, density = _bisect(equations, params, 0.0, peak_density, find_peak=False)
+        if method == "brent":
+            density = _brent(equations, params, peak_density)
+        else:
+            _, density = _bisect(equations, params, 0.0, peak_density, find_peak=False)
     # Otherwise the paper code keeps the last trial of step 1 (see docs/open-items.md).
     return density

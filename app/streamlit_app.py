@@ -11,8 +11,11 @@ Radiative cooling is deliberately not offered here (it is an experimental API op
 """
 
 import math
+import os
 import tempfile
 import traceback
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,6 +31,7 @@ from outflow import (
     paper_runs,
     solve_wind,
 )
+from outflow.boundary import compiled_trials_available
 from outflow.solver import DEFAULT_OUTER_RADIUS_IN_SB
 
 TAB_NAMES = (
@@ -60,10 +64,18 @@ def solve_safely(build_params, outer_radius_in_sb: float) -> RunOutcome:
     ``build_params`` is a function returning :class:`WindParameters`, so that invalid inputs
     are reported the same way as solver failures.
     """
-    try:
+
+    def solve():
         params = build_params()
-        outer_radius = outer_radius_in_sb * params.starburst_radius
-        return RunOutcome(profile=solve_wind(params, outer_radius=outer_radius))
+        return solve_wind(params, outer_radius=outer_radius_in_sb * params.starburst_radius)
+
+    return outcome_of(solve)
+
+
+def outcome_of(compute) -> RunOutcome:
+    """Call ``compute`` (which returns a profile); turn every failure into a plain message."""
+    try:
+        return RunOutcome(profile=compute())
     except NoSolutionError as error:
         return RunOutcome(error=error.message, details=error.details)
     except ValueError as error:
@@ -469,16 +481,56 @@ class FigureRunResult:
 
 
 def run_figure(spec: FigureSpec):
-    """Recompute every run of one figure, showing "run k of n" while it works."""
+    """Recompute every run of one figure, showing "k of n finished".
+
+    With the compiled search (Numba installed) a run takes a fraction of a second, less than
+    starting a worker process, so the runs are solved here one after another. Without it they
+    are solved in parallel processes.
+    """
     runs = paper_runs(spec.number)
-    progress = st.progress(0.0, text=f"Run 1 of {len(runs)}: {runs[0].label}…")
-    results = []
-    for index, run in enumerate(runs):
-        progress.progress(index / len(runs), text=f"Run {index + 1} of {len(runs)}: {run.label}…")
-        outcome = solve_safely(lambda run=run: run.params, run.outer_radius_in_sb)
-        results.append(FigureRunResult(run, outcome, load_paper_profile(run)))
+    progress = st.progress(0.0, text=f"Solving the {len(runs)} runs…")
+
+    def show_progress(finished: int):
+        progress.progress(finished / len(runs), text=f"{finished} of {len(runs)} runs finished…")
+
+    if compiled_trials_available():
+        outcomes = solve_runs_one_by_one(runs, show_progress)
+    else:
+        outcomes = solve_runs_in_parallel(runs, show_progress)
     progress.empty()
-    st.session_state[f"fig{spec.number}_results"] = results
+    st.session_state[f"fig{spec.number}_results"] = [
+        FigureRunResult(run, outcome, load_paper_profile(run))
+        for run, outcome in zip(runs, outcomes, strict=True)
+    ]
+
+
+def solve_runs_in_parallel(runs: list[PaperRun], on_finished) -> list[RunOutcome]:
+    """Solve the runs in separate processes (one per run, up to the number of CPU cores).
+
+    The runs are independent, so this changes only the waiting time, not the results. If
+    worker processes cannot be started (some hosting platforms forbid them), the runs are
+    solved one after another instead. ``on_finished(k)`` is called as each run finishes.
+    """
+    workers = min(len(runs), os.cpu_count() or 1)
+    try:
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            futures = [
+                pool.submit(solve_wind, run.params, outer_radius=run.outer_radius) for run in runs
+            ]
+            for finished, _ in enumerate(as_completed(futures), start=1):
+                on_finished(finished)
+            return [outcome_of(future.result) for future in futures]
+    except (BrokenProcessPool, OSError, NotImplementedError):
+        return solve_runs_one_by_one(runs, on_finished)
+
+
+def solve_runs_one_by_one(runs: list[PaperRun], on_finished) -> list[RunOutcome]:
+    """Solve the runs in this process, one after another."""
+    outcomes = []
+    for finished, run in enumerate(runs, start=1):
+        outcomes.append(solve_safely(lambda run=run: run.params, run.outer_radius_in_sb))
+        on_finished(finished)
+    return outcomes
 
 
 def figure_series(results: list[FigureRunResult], show_published: bool) -> list[plots.Series]:
@@ -526,7 +578,8 @@ def figure_tab(spec: FigureSpec):
         f"Run the {len(runs)} cases of Fig. {spec.number}",
         type="primary",
         key=f"fig{spec.number}_run",
-        help="Each case takes a few seconds; the whole figure about half a minute.",
+        help="About a second with Numba installed; otherwise the cases are solved in parallel "
+        "and take a few seconds on a multi-core computer.",
     )
     if pressed:
         run_figure(spec)
@@ -636,4 +689,8 @@ def main():
         about_tab()
 
 
-main()
+# Streamlit runs this script as "__main__". The worker processes of the figure tabs load it
+# under another name (Windows and macOS start workers by re-importing the main script), and
+# this guard stops them from drawing the page or starting workers of their own.
+if __name__ == "__main__":
+    main()
