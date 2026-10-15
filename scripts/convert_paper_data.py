@@ -76,19 +76,22 @@ def nfw_mass(characteristic_density, scale_radius, virial_radius):
     )
 
 
+def write_csv(path, table, fmt, header):
+    """Write header lines then comma-separated rows, UTF-8 with LF line endings on every OS."""
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        np.savetxt(handle, table, fmt=fmt, delimiter=",", header=header, comments="")
+
+
 def convert_cooling():
     """Write the Cloudy cooling table as CSV, with values that round-trip exactly."""
     temperature, cooling = np.load(LEGACY / "Cloudy.npy")
     out = DATA / "cloudy_cooling.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
-    np.savetxt(
+    write_csv(
         out,
         np.column_stack([temperature, cooling]),
-        fmt="%.17g",
-        delimiter=",",
-        header=COOLING_HEADER + "\nT_K,Lambda_erg_cm3_s",
-        comments="",
-        encoding="utf-8",
+        "%.17g",
+        COOLING_HEADER + "\nT_K,Lambda_erg_cm3_s",
     )
     print(f"wrote {out.relative_to(REPO)} ({temperature.size} rows)")
 
@@ -146,9 +149,7 @@ def convert_paper_runs():
         )
         out = out_dir / f"{name}.csv"
         header = run_header(index, figure, *settings) + "\n" + COLUMNS
-        np.savetxt(
-            out, table, fmt="%.10e", delimiter=",", header=header, comments="", encoding="utf-8"
-        )
+        write_csv(out, table, "%.10e", header)
         print(f"wrote {out.relative_to(REPO)} ({len(table)} rows)")
 
 

@@ -47,3 +47,62 @@ def test_cooling_table_equals_legacy_exactly():
     temperature, cooling = np.load(LEGACY / "Cloudy.npy")
     np.testing.assert_array_equal(values[:, 0], temperature)
     np.testing.assert_array_equal(values[:, 1], cooling)
+
+
+# --- the 14 published runs -------------------------------------------------------------------
+
+PAPER_RUNS = [
+    "fig6_thermal",
+    "fig6_cosmic_ray",
+    "fig6_radiation",
+    "fig7_B0_0uG",
+    "fig7_B0_5uG",
+    "fig7_B0_50uG",
+    "fig7_B0_100uG",
+    "fig8_kappa_0",
+    "fig8_kappa_1e3",
+    "fig8_kappa_1e4",
+    "fig8_kappa_1e5",
+    "fig9_halo_0x",
+    "fig9_halo_1x",
+    "fig9_halo_10x",
+]
+COLUMNS = ["r_cm", "v_cm_s", "rho_g_cm3", "P_erg_cm3", "Pc_erg_cm3", "T_K", "vA_cm_s"]
+PARAMETERS = [
+    "starburst_radius",
+    "energy_rate",
+    "mass_rate",
+    "thermal_fraction",
+    "cr_fraction",
+    "opacity",
+    "magnetic_field",
+    "halo_mass",
+    "nfw_scale_radius",
+    "virial_radius",
+    "outer_radius",
+]
+# Paper-code constants (cgs).
+MEAN_PARTICLE_MASS = 1.4 * 1.67e-24
+BOLTZMANN = 1.38e-16
+
+
+def test_exactly_the_14_paper_runs_exist():
+    found = sorted(p.stem for p in (DATA / "paper").glob("*.csv"))
+    assert found == sorted(PAPER_RUNS)
+
+
+@pytest.mark.parametrize("name", PAPER_RUNS)
+def test_paper_run_layout_and_temperature(name):
+    header, names, values = read_csv(DATA / "paper" / f"{name}.csv")
+    assert names == COLUMNS
+    for key in PARAMETERS:
+        assert float(header[key]) >= 0, key
+    assert values.ndim == 2 and values.shape[1] == 7 and len(values) > 1000
+    assert np.all(np.isfinite(values))
+    r, rho, pressure, temperature = values[:, 0], values[:, 2], values[:, 3], values[:, 5]
+    # Non-decreasing, not strictly increasing: the paper data repeat a radius where the step
+    # size fell below round-off (near r_sb, and where fig9_halo_10x stalls).
+    assert np.all(np.diff(r) >= 0)
+    # Each radius's temperature comes from its own density (T = mu P / (k_B rho)).
+    expected = MEAN_PARTICLE_MASS * pressure / (BOLTZMANN * rho)
+    np.testing.assert_allclose(temperature, expected, rtol=1e-9, atol=0)

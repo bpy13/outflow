@@ -69,7 +69,7 @@ Commands (env `outflow`): tests `pytest`, slow set `pytest -m slow`, lint
   - Notes: columns `T_K,Lambda_erg_cm3_s`; header line `# Cloudy cooling function, solar
     metallicity (Yu et al. 2020, §2.1.2). Source: func_map.dta`.
 
-- [ ] **Task 4: Convert the 14 published runs**
+- [x] **Task 4: Convert the 14 published runs**
   - Files: extend `scripts/convert_paper_data.py`; create 14 CSVs in `src/outflow/data/paper/`;
     extend `tests/integration/test_package_data.py`
   - Done when: 14 files exist. The tests (which need no legacy) check each has the 7 columns,
