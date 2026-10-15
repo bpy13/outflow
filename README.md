@@ -111,7 +111,10 @@ ruff check . ; ruff format --check .     # lint
 ```
 
 The paper-era scripts that produced the published figures are not included in this repository;
-the published profiles ship as CSV package data in `src/outflow/data/paper/`.
+the published profiles ship as CSV package data in `src/outflow/data/paper/`. The tests that
+compare against those published profiles run everywhere (including CI); a further set of
+line-by-line cross-checks against the paper-era functions (marker `legacy`) runs only where
+those scripts are present and is skipped otherwise.
 
 ## Citation
 

@@ -6,7 +6,7 @@ description: Who judges this repo and how. Used by the external-reviewer agent a
 # Stakeholders
 
 ## The author (owner)
-First author of Yu et al. 2019 (MNRAS). Knows the physics and the paper code in depth; is not
+First author of Yu et al. 2020 (MNRAS 492, 3179). Knows the physics and the paper code in depth; is not
 a professional programmer. Cares that:
 - results reproduce the published Figs. 6–9 (differences invisible by eye);
 - the code reads alongside the paper (equation numbers, paper symbols);

@@ -1,7 +1,7 @@
 # outflow – notes for Claude
 
 A public, refactored Python package and Streamlit app for the semi-analytic galactic-outflow
-model of Yu, Owen, Wu & Ferreras (2019, MNRAS), "A hydrodynamical study of outflows in starburst
+model of Yu, Owen, Wu & Ferreras (2020, MNRAS 492, 3179), "A hydrodynamical study of outflows in starburst
 galaxies with different driving mechanisms". The model solves the steady, spherically symmetric
 wind equations with thermal, radiation and cosmic-ray driving plus an NFW halo (paper §2.4).
 Audience: astrophysicists reading the paper and programmers with no astrophysics background.

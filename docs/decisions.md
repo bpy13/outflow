@@ -191,7 +191,7 @@ From the builder check on these documents. All minor; the user can overturn any.
     (velocity, density, temperature, pressures), overlay of several runs, CSV download.
   - **Fig. 6 Driving mechanisms**, **Fig. 7 Magnetic field**, **Fig. 8 Opacity**,
     **Fig. 9 Gravity** – the paper's run sets, recomputed on demand, with the published curves
-    (from `tests/reference/`) overlaid for comparison. (overlay is Claude's call)
+    (from `src/outflow/data/paper/`) overlaid for comparison. (overlay is Claude's call)
   - **About** – what the model is, assumptions, citation, the Ė note.
 - No cooling switch. (user)
 - Always compute on the spot, no caching. Runs start on a button press, not on tab open, so
