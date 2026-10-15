@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "outflow"
+dynamic = ["version"]
+description = "Semi-analytic galactic outflow model of Yu et al. 2020 (MNRAS 492, 3179), with a Streamlit app"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "B. P. Brian Yu" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "matplotlib>=3.8",
+    "streamlit>=1.30",
+    "plotly>=5.18",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[tool.setuptools.dynamic]
+version = { attr = "outflow.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+outflow = ["data/**/*.csv", "data/*.csv"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not slow'"
+markers = [
+    "slow: full paper reproduction and other long runs (run with -m slow)",
+    "legacy: needs the git-ignored legacy/ folder; skipped when it is absent",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]

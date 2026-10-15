@@ -1,0 +1,17 @@
+# Conda env for development: conda env create -f environment.yml
+# Pinned to the versions tested; pyproject.toml keeps minimum ranges.
+name: outflow
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - numpy==2.5.4
+      - scipy==1.18.1
+      - matplotlib==3.11.2
+      - streamlit==1.66.0
+      - plotly==7.1.0
+      - pytest==9.1.1
+      - ruff==0.17.0
+      - -e .[dev]

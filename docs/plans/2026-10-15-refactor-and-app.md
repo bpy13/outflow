@@ -44,7 +44,7 @@ Commands (env `outflow`): tests `pytest`, slow set `pytest -m slow`, lint
 
 ## Phase 1: Setup and reference data (A1, A5 partly)
 
-- [ ] **Task 1: Environment and package skeleton**
+- [x] **Task 1: Environment and package skeleton**
   - Files: create `pyproject.toml`, `src/outflow/__init__.py` (`__version__ = "0.1.0"`),
     `tests/unit/test_import.py`
   - Done when: `conda run -n outflow python -c "import outflow; print(outflow.__version__)"`
